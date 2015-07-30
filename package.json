@@ -1,0 +1,33 @@
+{
+  "name": "recorder",
+  "version": "1.0.0",
+  "description": "Thin ORM layer for couchdb on top of nano",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://bcharbonnier@github.com/minni-im/recorder.git"
+  },
+  "keywords": [
+    "orm",
+    "nano",
+    "couchdb",
+    "database"
+  ],
+  "author": "Benoit Charbonnier <benoit.charbonnier@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/minni-im/recorder/issues"
+  },
+  "homepage": "https://github.com/minni-im/recorder#readme",
+  "dependencies": {
+    "nano": "^6.1.4"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-babel": "^5.1.0",
+    "gulp-plumber": "^1.0.1"
+  }
+}
