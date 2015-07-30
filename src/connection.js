@@ -1,7 +1,9 @@
+import { EventEmitter } from "events";
 import nano from "nano";
 
-export default class Connection {
+export default class Connection extends EventEmitter {
   constructor(base) {
+    super();
     this.base = base;
     this.db = null;
   }
@@ -10,9 +12,25 @@ export default class Connection {
    * Open the connection to couchdb
    */
   open(url, database, options, callback) {
+    let nope = function() {};
+    switch (arguments.length) {
+      case 2:
+        options = {};
+        callback = nope;
+        break;
+      case 3:
+        if (typeof options === "function") {
+          callback = options;
+          options = {};
+        } else {
+          callback = nope;
+        }
+        break;
+    }
+
     let conn = nano(Object.assign({
       url: url
-    }, config));
+    }, options));
     conn.db.get(database, error => {
       if (error && error.error === "not_found") {
         conn.db.create(database, createError => {
@@ -20,13 +38,20 @@ export default class Connection {
             throw createError;
           }
           this.db = conn.use(database);
+          this.emit("connected");
           callback(this.db);
         });
       } else {
         this.db = conn.use(database);
+        this.emit("connected");
         callback(this.db);
       }
     });
+  }
+
+  close(callback) {
+    this.emit("close");
+    callback();
   }
 
   model(name, schema) {

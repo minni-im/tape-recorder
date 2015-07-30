@@ -26,8 +26,20 @@
     "nano": "^6.1.4"
   },
   "devDependencies": {
+    "babel-core": "^5.8.19",
+    "babel-plugin-object-assign": "^1.2.1",
+    "eslint": "^0.24.1",
     "gulp": "^3.9.0",
     "gulp-babel": "^5.1.0",
-    "gulp-plumber": "^1.0.1"
+    "gulp-plumber": "^1.0.1",
+    "jest-cli": "^0.4.17"
+  },
+  "jest": {
+    "testPathDirs": [
+      "."
+    ],
+    "testFileExtensions": [
+      "js"
+    ]
   }
 }

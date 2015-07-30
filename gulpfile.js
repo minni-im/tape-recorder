@@ -9,7 +9,9 @@ gulp.task("watch", function() {
 gulp.task("default", function () {
   return gulp.src("src/**/*.js")
     .pipe(plumber())
-    .pipe(babel())
+    .pipe(babel({
+      plugins: ["object-assign"]
+    }))
     .pipe(plumber.stop())
     .pipe(gulp.dest("lib"));
 });
