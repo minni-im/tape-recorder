@@ -2,7 +2,7 @@
   "name": "recorder",
   "version": "1.0.0",
   "description": "Thin ORM layer for couchdb on top of nano",
-  "main": "lib/index.js",
+  "main": "index.js",
   "scripts": {
     "test": "jest"
   },
@@ -26,6 +26,7 @@
     "nano": "^6.1.4"
   },
   "devDependencies": {
+    "babel": "^5.8.19",
     "babel-core": "^5.8.19",
     "babel-plugin-object-assign": "^1.2.1",
     "eslint": "^0.24.1",

@@ -1,9 +1,6 @@
 import Connection from "./connection";
 import Model from "./model";
-import Document from "./document";
-
-
-let urlRegExp = /(.+:)/
+import SchemaClass from "./schema";
 
 /**
  * Recorder class
@@ -13,8 +10,10 @@ class Recorder {
     this.connections = [];
     this.models = {};
     this.modelSchemas = {};
+    this.plugins = [];
 
     let conn = this.createConnection(); //create the default connection
+    conn.models = this.models;
   }
 
   get connection() {
@@ -95,6 +94,33 @@ class Recorder {
   }
 
   /**
+   * Applies global plugins to `schema`.
+   *
+   * @private
+   * @param {Schema} schema
+   */
+  _applyPlugins(schema) {
+    for (let plugin of this.plugins) {
+      schema.plugin(plugin[0], plugin[1]);
+    }
+  }
+
+  /**
+   * Declares a global plugin executed on all Schemas.
+   *
+   * Equivalent to calling `.plugin(fn)` on each Schema you create.
+   *
+   * @param {Function} fn plugin callback
+   * @param {Object} [opts] optional options
+   * @return {Recorder} this
+   *
+   */
+  plugin(fn, options) {
+    this.plugins.push([fn, options]);
+    return this;
+  }
+
+  /**
    * Define a model or retrieve it
    *
    * Models defined on the `recorder` instance are available to all connection created by the same `recorder` instance.
@@ -113,9 +139,9 @@ class Recorder {
       return this.models[name];
     }
     if (this.models[name]) {
-      throw new Error(`Model '${name}' already exists`);
+      throw new Error(`Model '${name}' already exists.`);
     }
-    let model = Model.init(name, schema, this.connection);
+    let model = Model.init(name, schema, this.connection.db);
     this.models[name] = model;
     return model;
   }
@@ -123,3 +149,6 @@ class Recorder {
 }
 
 export default new Recorder();
+
+//TODO should be a way to export that in a better way
+export let Schema = SchemaClass;

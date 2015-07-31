@@ -5,7 +5,7 @@ export default class Connection extends EventEmitter {
   constructor(base) {
     super();
     this.base = base;
-    this.db = null;
+    //this.db = null;
   }
 
   /**
@@ -55,10 +55,8 @@ export default class Connection extends EventEmitter {
   }
 
   model(name, schema) {
-    let model = this.base.model(name, schema);
+    let model = this.base.model(name, schema, this.db);
     this.models[name] = model;
-
-    model.init();
     return model;
   }
 }
