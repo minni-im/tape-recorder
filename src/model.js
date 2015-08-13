@@ -1,17 +1,10 @@
 import Document from "./document";
 import Schema from "./schema";
 
-export default class Model {
+export default class Model extends Document {
   constructor(data) {
-    this.data = data;
-  }
-
-  toJSON() {
-    return this.data;
-  }
-
-  toString() {
-    return JSON.stringify(this.data);
+    super();
+    Object.assign(this, data);
   }
 
   get db() {
@@ -22,35 +15,40 @@ export default class Model {
     console.log(`about to execute hook ${hookName}`);
   }
 
+  static all(callback) {
+    this.db.view(this.modelName, "all", function(error, documents) {
+      if (error) {
+        return callback(error);
+      }
+      callback(null, documents);
+    });
+  }
+
+  static where(viewName, params = {}, callback) {
+    this.db.view(this.modelName, viewName, params, function(error, documents) {
+      if (error) {
+        return callback(error);
+      }
+      callback(null, documents);
+    });
+  }
+
+  static findOne() {
+
+  }
+
   static init(modelName, modelSchema, connection) {
     let schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
+    schema.generateDesignDoc(modelName);
+    schema.updateDesignDoc(modelName, connection.db);
 
-    // Creating all necessary views related to Schema structure
-    schema.names.forEach(property => {
-      schema.view(property, {
-        map: `function (doc) {
-          if (doc.modelType === '${modelName}' && doc.${property}) {
-            emit(doc.${property}, doc)
-          }
-        }`
-      });
-    });
-
-    // Creating an `all` view to return all Documents associated to this Schema
-    schema.view("all", {
-      map: `function (doc) {
-        if (doc.modelType === '${modelName}') {
-          emit(doc._id, doc)
-        }
-      }`
-    });
-
-    return (data) => {
-      let instance = new Model(data);
-      instance.name = modelName;
-      instance.schema = schema;
-      instance.connection = connection;
-      return instance;
-    }
+    return class GeneratedModel extends Model {
+      constructor(data) {
+        super(data);
+        this.modelName = modelName;
+        this.schema = schema;
+        this.connection = connection;
+      }
+    };
   }
 }

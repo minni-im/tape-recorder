@@ -9,7 +9,7 @@
     let UserSchema = new recorder.Schema({
       firstName: String,
       lastName: String,
-      birthDate: Date
+      birthDate: { type: Date, default: Date.now }
     });
 
     UserSchema.method("fullName", () => {
