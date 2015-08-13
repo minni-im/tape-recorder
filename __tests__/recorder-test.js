@@ -1,7 +1,33 @@
-var recorder = require("..");
-console.log("Testing recorder");
 
-console.log(recorder.Schema);
+var recorder = require("..");
+var Schema = recorder.Schema;
+
+
+recorder.connect("http://localhost:5984", "minni");
+
+var UserSchema = new Schema({
+  firstName: String,
+  lastName: String
+});
+
+UserSchema.view("fullname", {
+  map: 'function(doc) {\
+    if (doc.modelType === "User" && doc.firstName && doc.lastName) {\
+      emit([doc.lastName, doc.firstName], doc);\
+    }\
+  }'
+});
+
+var User = recorder.model("User", UserSchema);
+
+console.log(User);
+console.log("==============================================");
+var user = new User({
+  firstName: "Benoit",
+  lastName: "Charbonnier"
+});
+
+console.log(user);
 
 // recorder.connect("http://localhost:5984", "minni", function() {
 //   var User = recorder.model("User", {

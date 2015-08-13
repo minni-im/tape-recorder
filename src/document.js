@@ -1,13 +1,7 @@
 
 export default class Document {
-  constructor(model) {
-    this.name = model.name;
-    this.schema = model.schema;
-    this.hookExecutor = (hookName, modelObject) => {
-      model.execHook.call(model, hookName, modelObject);
-    };
-    this.db = model.db;
-
+  constructor(data) {
+    Object.assign(this, data);
     this.serialize = this.serialise; // Alias for the Americans :) !
   }
 
@@ -15,7 +9,7 @@ export default class Document {
     this.dateCreated = this.dateCreated || new Date();
     this.lastUpdated = new Date();
 
-    this.hookExecutor("beforeSave", this);
+    this.execHook("beforeSave", this);
 
     let item = this.serialise();
     this.db.insert(item, (error, doc) => {
@@ -27,13 +21,13 @@ export default class Document {
       this.id = doc._id;
       this.rev = doc._rev;
 
-      this.hookExecutor("afterSave", this);
+      this.execHook("afterSave", this);
       callback(null, this);
     });
   }
 
   remove(callback = () => {}) {
-    this.hookExecutor("beforeRemove", this);
+    this.execHook("beforeRemove", this);
 
     try {
       if (!this.rev) {
@@ -47,7 +41,7 @@ export default class Document {
           callback(error, null);
         }
 
-        this.hookExecutor("afterRemove", this);
+        this.execHook("afterRemove", this);
         callback(null);
       });
     } catch(ex) {
@@ -63,7 +57,7 @@ export default class Document {
     serialised.modelType = this.name;
     serialised.id = this.id;
 
-    Object.keys(this.schema).forEach(key => {
+    this.schema.names.forEach(key => {
       serialised[key] = this[key];
     });
     return serialised;

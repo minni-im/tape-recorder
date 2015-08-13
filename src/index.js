@@ -1,6 +1,6 @@
 import Connection from "./connection";
 import Model from "./model";
-import SchemaClass from "./schema";
+import Schema from "./schema";
 
 /**
  * Recorder class
@@ -139,16 +139,13 @@ class Recorder {
       return this.models[name];
     }
     if (this.models[name]) {
-      throw new Error(`Model '${name}' already exists.`);
+      throw new Error(`Model '${name}' already exists. It can't be defined twice.`);
     }
-    let model = Model.init(name, schema, this.connection.db);
+    let model = Model.init(name, schema, this.connection);
     this.models[name] = model;
     return model;
   }
-
 }
 
+Recorder.prototype.Schema = Schema;
 export default new Recorder();
-
-//TODO should be a way to export that in a better way
-export let Schema = SchemaClass;

@@ -11,6 +11,7 @@ const normalizeSchema = (schema) => {
       };
     }
   }
+  return schema;
 };
 
 let getHookName = (type, name) => {
@@ -33,6 +34,14 @@ export default class Schema {
       "beforeRemove": [],
       "afterRemove": []
     };
+  }
+
+  /**
+   * All schema property names
+   * @return {Array} property names
+   */
+  get names() {
+    return Object.keys(this.schema);
   }
 
   /**
