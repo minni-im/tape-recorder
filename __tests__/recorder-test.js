@@ -23,10 +23,18 @@ recorder.connect("http://localhost:5984", "minni", function() {
 
   var User = recorder.model("User", UserSchema);
 
-  var user = new User({
-    firstName: "Benoit",
-    lastName: "Charbonnier"
-  });
+  // var user = new User({
+  //   firstName: "Benouat",
+  //   lastName: "Carbonaro"
+  // });
+  //
+  // user.save().then(function(savedUser) {
+  //   console.log("Hello there! I'm " + savedUser.fullName());
+  // });
 
-  //console.log(user);
+  User.findAll().then(function(users) {
+    console.log(users);
+  }).catch(function(err) {
+    console.error("not working", err);
+  });
 });

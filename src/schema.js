@@ -1,3 +1,5 @@
+import { sortObjectByKey } from "./util";
+
 const normalizeSchema = (schema) => {
   for (let key in schema) {
     if (schema[key].hasOwnProperty("type")) {
@@ -72,7 +74,7 @@ export default class Schema {
         "_id": _designId,
         "_rev": rev ? rev : undefined,
         "language": "javascript",
-        "views": this.views
+        "views": sortObjectByKey(this.views)
       }, (error) => {
         if (error) {
           console.error(error);
