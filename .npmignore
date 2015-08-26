@@ -1,0 +1,8 @@
+.git*
+node_modules
+.DS_Store
+*~
+npm-debug.log
+.idea
+phantomjsdriver.log
+bower_components
