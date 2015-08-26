@@ -54,7 +54,7 @@ export default class Connection extends EventEmitter {
   }
 
   model(name, schema) {
-    let model = this.base.model(name, schema, this.db);
+    let model = this.base.model(name, schema);
     this.models[name] = model;
     return model;
   }

@@ -81,7 +81,10 @@ class Recorder {
    * @api public
    */
   model(name, schema) {
-    if (arguments.length === 1) {
+    if (arguments.length === 0) {
+      throw new Error(`Naming your model is mandatory.`);
+    }
+    if (arguments.length === 1 || schema === undefined) {
       if (!this.models[name]) {
         throw new Error(`Model '${name}' does not exist.`);
       }

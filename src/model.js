@@ -27,6 +27,29 @@ let applyStaticsFromSchema = (model, schema) => {
   }
 };
 
+/*!
+ * Register virtuals properties for this model
+ *
+ * @param {Model} model
+ * @param {Schema} schema
+ */
+let applyVirtualsFromSchema = (model, schema) => {
+  for (let virtual in schema.virtuals) {
+    let virtualDefinition = schema.virtuals[virtual];
+    let propertyDefinition = {
+      get: virtualDefinition.get.bind(model)
+    };
+    if (virtualDefinition.set) {
+      propertyDefinition.set = virtualDefinition.set.bind(model);
+    }
+    Object.defineProperty(model, virtual, propertyDefinition);
+  }
+};
+
+let hydrateDocument = (model, row) => {
+  let GeneratedModel = model.connection.model(row.value.modelType);
+  return new GeneratedModel(row.value);
+};
 
 /**
  * Model class
@@ -39,7 +62,7 @@ let applyStaticsFromSchema = (model, schema) => {
  */
 export default class Model extends Document {
   constructor(data) {
-    super();
+    super(data);
     Object.assign(this, data);
   }
 
@@ -58,11 +81,14 @@ export default class Model extends Document {
    */
   static findAll() {
     return new Promise((resolve, reject) => {
-      this.db.view(this.modelName, "all", function(error, documents) {
+      this.db.view(this.modelName, "all", (error, response) => {
         if (error) {
           return reject(error);
         }
-        resolve(documents);
+        let docs = response.rows.map((row) => {
+          return hydrateDocument(this, row);
+        });
+        resolve(docs);
       });
     });
   }
@@ -73,9 +99,7 @@ export default class Model extends Document {
    * @api public
    */
   static findOne() {
-    return new Promise((reslove, reject) => {
-      resolve({});
-    });
+    return this.findFirst();
   }
 
   /**
@@ -84,9 +108,12 @@ export default class Model extends Document {
    * @api public
    */
   static findFirst() {
-    return new Promise((reslove, reject) => {
-      resolve({});
-    });
+    return this.findAll()
+      .then(documents => {
+        if (documents.length) {
+          return documents[0];
+        }
+      });
   }
 
   /**
@@ -96,11 +123,14 @@ export default class Model extends Document {
    */
   static where(viewName, params = {}) {
     return new Promise((resolve, reject) => {
-      this.db.view(this.modelName, viewName, params, function(error, documents) {
+      this.db.view(this.modelName, viewName, params, (error, response) => {
         if (error) {
           return reject(error);
         }
-        resolve(documents);
+        let docs = response.rows.map((row) => {
+          return hydrateDocument(this.modelName, this.schema, row, this.connection);
+        });
+        resolve(docs);
       });
     });
   }
@@ -119,16 +149,23 @@ export default class Model extends Document {
 
     // Let's contruct the inner class representing this model
     class GeneratedModel extends Model {
-      constructor(data) {
+      constructor(data={}) {
         super(data);
         this.modelName = modelName;
         this.schema = schema;
         this.connection = connection;
+        applyVirtualsFromSchema(this, schema);
       }
     }
 
     applyMethodsFromSchema(GeneratedModel, schema);
     applyStaticsFromSchema(GeneratedModel, schema);
+
+    //TODO should be done differently. Don't like to publish that information statically. Check what could happen with multiple connections.
+    GeneratedModel.modelName = modelName;
+    GeneratedModel.schema = schema;
+    GeneratedModel.connection = connection;
+    GeneratedModel.db = connection.db;
 
     return GeneratedModel;
   }

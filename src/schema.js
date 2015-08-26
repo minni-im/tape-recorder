@@ -28,6 +28,7 @@ export default class Schema {
     this.schema = normalizeSchema(schema);
     this.methods = {};
     this.statics = {};
+    this.virtuals = {};
     this.views = {};
     this.hooks = {
       "beforeCreate": [],
@@ -36,6 +37,7 @@ export default class Schema {
       "beforeRemove": [],
       "afterRemove": []
     };
+    this._designUpdated = false;
   }
 
   /**
@@ -68,6 +70,9 @@ export default class Schema {
    * @api private
    */
   updateDesignDoc(modelName, connection) {
+    if (this._designUpdated) {
+      return;
+    }
     let _designId = `_design/${modelName}`;
     let update = (rev) => {
       connection.insert({
@@ -77,8 +82,9 @@ export default class Schema {
         "views": sortObjectByKey(this.views)
       }, (error) => {
         if (error) {
-          console.error(error);
+          console.error(`Design Update '${error.error}' Error: ${error.reason}`);
         }
+        this._designUpdated = true;
       });
     };
     connection.get(_designId, (error, design) => {
@@ -141,6 +147,33 @@ export default class Schema {
   }
 
   /**
+   * Create a virtual property to the compiled model.
+   *
+   * If a hash of virtualName/ObjectGetterSetter is passed as the only argument, each pair will be added to the virtuals.
+   * @return {Schema} this
+   */
+  virtual(virtualName, getter, setter) {
+    if (typeof virtualName !== "string") {
+      for (let name in virtualName) {
+        this.virtuals[name] = {
+          get: virtualName[name].get
+        };
+        if (virtualName[name].set) {
+          this.virtuals[name].set = this.virtualName[name].set;
+        }
+      }
+    } else {
+      this.virtuals[virtualName] = {
+        get: getter
+      };
+      if (setter) {
+        this.virtuals[virtualName].set = setter;
+      }
+    }
+    return this;
+  }
+
+  /**
    * Add a view to underliying CouchDB desgin doc associated to this schema
    *
    * @param {String} name of the view
@@ -195,5 +228,19 @@ export default class Schema {
   plugin(plugin, options) {
     plugin(this, options);
     return this;
+  }
+
+  /**
+   * Get the default value according to the schema definition
+   *
+   * @param {String} name key name
+   * @return {Function} default value function to be executed
+   */
+  getDefaultFunction(name) {
+    let defaultValue = this.schema[name].default;
+    if (typeof defaultValue === "function") {
+      return defaultValue;
+    }
+    return () => defaultValue;
   }
 }

@@ -1,40 +1,32 @@
+jest.autoMockOff();
 
-var recorder = require("..");
-var Schema = recorder.Schema;
+var recorder = require("../lib");
 
-
-recorder.connect("http://localhost:5984", "minni", function() {
-  var UserSchema = new Schema({
-    firstName: String,
-    lastName: String
-  });
-
-  UserSchema
-    .view("fullName", {
-      map: function(doc) {
-        if (doc.modelType === "User" && doc.firstName && doc.lastName) {
-          emit([doc.lastName, doc.firstName], doc);
-        }
-      }
-    })
-    .method("fullName", function() {
-      return this.firstName + " " + this.lastName;
+describe("recorder", function() {
+  describe("models", function() {
+    it("should be defined with a name", function() {
+      expect(function() {
+        recorder.model();
+      }).toThrow(new Error("Naming your model is mandatory."));
     });
 
-  var User = recorder.model("User", UserSchema);
+    it("should be retrieved only once being defined", function() {
+      expect(function() {
+        recorder.model("User");
+      }).toThrow(new Error("Model 'User' does not exist."));
+    });
 
-  // var user = new User({
-  //   firstName: "Benouat",
-  //   lastName: "Carbonaro"
-  // });
-  //
-  // user.save().then(function(savedUser) {
-  //   console.log("Hello there! I'm " + savedUser.fullName());
-  // });
+    it("should not be defined twice", function() {
+      var schema = new recorder.Schema({ name: String });
 
-  User.findAll().then(function(users) {
-    console.log(users);
-  }).catch(function(err) {
-    console.error("not working", err);
+      // We don't want to actually really call couchdb to update designdocs.
+      schema._designUpdated = true;
+
+      recorder.model("User", schema);
+
+      expect(function() {
+        recorder.model("User", schema);
+      }).toThrow(new Error("Model 'User' already exists. It can't be defined twice."));
+    });
   });
 });
