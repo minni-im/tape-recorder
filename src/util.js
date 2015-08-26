@@ -7,3 +7,10 @@ export let mixin = (Parent, ...mixins) => {
   }
   return Mixed;
 };
+
+export let sortObjectByKey = (object) => {
+  return Object.keys(object).sort().reduce((sorted, key) => {
+    sorted[key] = object[key];
+    return sorted;
+  }, {});
+};

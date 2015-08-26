@@ -1,5 +1,5 @@
 {
-  "name": "recorder",
+  "name": "tape-recorder",
   "version": "1.0.0",
   "description": "Thin ORM layer for couchdb on top of nano",
   "main": "index.js",
@@ -8,20 +8,24 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://bcharbonnier@github.com/minni-im/recorder.git"
+    "url": "git+https://bcharbonnier@github.com/minni-im/tape-recorder.git"
   },
   "keywords": [
+    "recorder",
+    "tape-recorder",
     "orm",
     "nano",
     "couchdb",
-    "database"
+    "database",
+    "db",
+    "nosql"
   ],
   "author": "Benoit Charbonnier <benoit.charbonnier@gmail.com>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/minni-im/recorder/issues"
+    "url": "https://github.com/minni-im/tape-recorder/issues"
   },
-  "homepage": "https://github.com/minni-im/recorder#readme",
+  "homepage": "https://github.com/minni-im/tape-recorder#readme",
   "dependencies": {
     "nano": "^6.1.4"
   },
@@ -34,6 +38,9 @@
     "gulp-babel": "^5.1.0",
     "gulp-plumber": "^1.0.1",
     "jest-cli": "^0.4.17"
+  },
+  "node": {
+    "engine": "<= 0.10.*"
   },
   "jest": {
     "testPathDirs": [

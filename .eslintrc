@@ -7,9 +7,7 @@ rules:
 
 ecmaFeatures:
   modules: true
-  jsx: true
 
 env:
   es6: true
   node: true
-  jasmine: true

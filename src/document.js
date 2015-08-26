@@ -1,75 +1,157 @@
-
 export default class Document {
-  constructor(model) {
-    this.name = model.name;
-    this.schema = model.schema;
-    this.hookExecutor = (hookName, modelObject) => {
-      model.execHook.call(model, hookName, modelObject);
-    };
-    this.db = model.db;
-
+  constructor(data={}) {
+    ["_id", "_rev"].forEach( key => {
+      if (data[key]) {
+        this[key.substr(1)] = data[key];
+        delete data[key];
+      }
+    });
+    this._attachments = {};
     this.serialize = this.serialise; // Alias for the Americans :) !
   }
 
-  save(callback = () => {}) {
+  save() {
     this.dateCreated = this.dateCreated || new Date();
     this.lastUpdated = new Date();
 
-    this.hookExecutor("beforeSave", this);
+    if (!this.id) {
+      this.execHook("beforeCreate", this);
+    }
 
+    this.execHook("beforeSave", this);
     let item = this.serialise();
-    this.db.insert(item, (error, doc) => {
-      if (error) {
-        console.error(`\nError: ${error.message}`);
-        return callback(error, null);
-      }
 
-      this.id = doc._id;
-      this.rev = doc._rev;
+    return new Promise((resolve, reject) => {
+      this.db.insert(item, (error, doc) => {
+        if (error) {
+          return reject(error);
+        }
+        this.id = doc.id;
+        this.rev = doc.rev;
 
-      this.hookExecutor("afterSave", this);
-      callback(null, this);
+        this.execHook("afterSave", this);
+        return resolve(this);
+      });
     });
   }
 
-  remove(callback = () => {}) {
-    this.hookExecutor("beforeRemove", this);
-
-    try {
+  remove() {
+    this.execHook("beforeRemove", this);
+    return new Promise((resolve, reject) => {
       if (!this.rev) {
-        return callback({
-          message: "Remove failed, 'rev' needs to be supplied"
+        return reject({
+          error: "",
+          reason: "Remove failed, 'rev' needs to be supplied"
         });
       }
 
       this.db.destroy(this.id, this.rev, (error) => {
         if (error) {
-          callback(error, null);
+          reject({ message: error });
         }
 
-        this.hookExecutor("afterRemove", this);
-        callback(null);
+        this.execHook("afterRemove", this);
+        return resolve();
       });
-    } catch(ex) {
-      console.error(`\nError: ${ex}`);
-      callback(ex);
-    }
+    });
   }
 
   serialise() {
     let serialised = {};
     serialised.dateCreated = this.dateCreated;
     serialised.lastUpdated = this.lastUpdated;
-    serialised.modelType = this.name;
-    serialised.id = this.id;
+    serialised.modelType = this.modelName;
+    serialised._id = this.id;
+    if (this.rev) {
+      serialised._rev = this.rev;
+    }
 
-    Object.keys(this.schema).forEach(key => {
+    this.schema.names.forEach(key => {
       serialised[key] = this[key];
+      if (this[key] === undefined) {
+        let defaultValueFn = this.schema.getDefaultFunction(key);
+        serialised[key] = defaultValueFn();
+      }
     });
+
+    // Special attachments usecase.
+    if (this._attachments) {
+      serialised._attachments = this._attachments;
+    }
     return serialised;
   }
 
   toJSON() {
     return this.serialise();
+  }
+
+  /*!
+   * Attachments
+   * @api public
+   */
+  get attachments() {
+    return {
+
+      /**
+       * Save an attachment into the current document
+       *
+       * @param {String} name attachment's name
+       * @param {Blob} data
+       * @param {String} contentType attachment's content-type
+       * @return {Promise}
+       */
+      save: (name, data, contentType) => {
+        return new Promise((resolve, reject) => {
+          this.db.attachment.insert(this.id, name, data, contentType, {
+            "rev": this.rev
+          }, (error, response) => {
+            if (error) {
+              return reject(error);
+            }
+            this.rev = response.rev;
+            resolve(response);
+          });
+        });
+      },
+
+      /**
+       * Retrieve an attachment associated to the current Document.
+       *
+       * @param {String} name attachment's name
+       * @return {Promise}
+       */
+      get: (name, params={}) => {
+        Object.assign(params, { "rev": this.rev });
+        return new Promise((resolve, reject) => {
+          this.db.attachment.get(this.id, name, params,
+            (error, response) => {
+              if (error) {
+                return reject(error);
+              }
+              resolve(response);
+            });
+        });
+      },
+
+      /**
+       * Remove an existing attachment
+       *
+       * @param {String} name attachment's name
+       * @return {Promise}
+       */
+      remove: (name) => {
+        return new Promise((resolve, reject) => {
+          this.db.attachment.destroy(this.id, name, {
+            "rev": this.rev
+          }, (error, response) => {
+            if (error) {
+              return reject(error);
+            }
+            this.rev = response.rev;
+            resolve({"ok": true});
+          });
+        });
+      }
+    };
   }
 }

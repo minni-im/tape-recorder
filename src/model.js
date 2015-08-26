@@ -1,148 +1,172 @@
-import ChainableView from "./chainview";
 import Document from "./document";
+import Schema from "./schema";
 
-import { mixin } from "./util";
-
-let normalizeSchema = (schema) => {
-  for (let key in schema) {
-    if (schema[key].hasOwnProperty("type")) {
-      if (!schema[key].hasOwnProperty("default")) {
-        schema[key].default = undefined;
-      }
-    } else {
-      schema[key] = {
-        type: schema[key],
-        default: undefined
-      };
+/*!
+ * Register methods to be applied to this model
+ *
+ * @param {Model} model
+ * @param {Schema} schema
+ */
+let applyMethodsFromSchema = (model, schema) => {
+  for (let method in schema.methods) {
+    if (typeof schema.methods[method] === "function") {
+      model.prototype[method] = schema.methods[method];
     }
   }
-  return schema;
 };
 
-let populateMethods = (model, methods) => {
-  Object.keys(methods).forEach(key => {
-    model[key] = methods[key];
-  });
+/*!
+ * Register statics for this model
+ *
+ * @param {Model} model
+ * @param {Schema} schema
+ */
+let applyStaticsFromSchema = (model, schema) => {
+  for (let stat in schema.statics) {
+    model[stat] = schema.statics[stat];
+  }
 };
 
-let populateData = (model, schema, data) => {
-  Object.keys(schema).forEach(key => {
-    //TODO: should handle hasOne, hasMany
-    if (data[key] !== undefined) {
-      model[key] = data[key];
-    } else {
-      model[key] = schema[key].default;
+/*!
+ * Register virtuals properties for this model
+ *
+ * @param {Model} model
+ * @param {Schema} schema
+ */
+let applyVirtualsFromSchema = (model, schema) => {
+  for (let virtual in schema.virtuals) {
+    let virtualDefinition = schema.virtuals[virtual];
+    let propertyDefinition = {
+      get: virtualDefinition.get.bind(model)
+    };
+    if (virtualDefinition.set) {
+      propertyDefinition.set = virtualDefinition.set.bind(model);
     }
-  });
-};
-
-let Saveable = {
-  beforeSave(fn) {
-    this.hooks.beforeSave = fn;
-  },
-  afterSave(fn) {
-    this.hooks.afterSave = fn;
+    Object.defineProperty(model, virtual, propertyDefinition);
   }
 };
 
-let Removable = {
-  beforeRemove(fn) {
-    this.hooks.beforeRemove = fn;
-  },
-  afterRemove(fn) {
-    this.hooks.afterRemove = fn;
-  }
+let hydrateDocument = (model, row) => {
+  let GeneratedModel = model.connection.model(row.value.modelType);
+  return new GeneratedModel(row.value);
 };
 
-let Loadable = {
-  beforeCreate(fn) {
-    this.hooks.beforeCreate = fn;
-  },
-
-  load(data) {
-    let model = new Document(this);
-    populateMethods(model, this.methods);
-
-    if (!data) { return model; }
-
-    populateData(model, this.schema, data);
-
-    if (data._id) { model.id = data._id; }
-    if (data._rev) { model.rev = data._rev; }
-
-    model.dateCreated = data.dateCreated;
-    model.lastUpdated = data.lastUpdated;
-
-    return model;
-  },
-
-  create(data) {
-    let model = this.load(data);
-    this.execHook("beforeCreate", model);
-    return model;
-  }
-};
-
-let Queryable = {
-  find() {},
-  findAll() {},
-  where() {}
-};
-
-export default class Model extends mixin(class Base {}, Loadable, Queryable, Saveable, Removable) {
-  constructor(name, schema, views, db) {
-    super();
-    this.name = name;
-    this.schema = schema;
-    this.views = views;
-    this.methods = {};
-    this.hooks = {};
-    this.db = db;
+/**
+ * Model class
+ *
+ * Provide an interface to CouchDB documents as well as creates instances.
+ *
+ * @param {Object} data values with which to create the document
+ * @inherits Document
+ * @api public
+ */
+export default class Model extends Document {
+  constructor(data) {
+    super(data);
+    Object.assign(this, data);
   }
 
-  addView(viewName, view) {
-    this.views[viewName] = view;
-  }
-
-  addMethod(methodName, method) {
-    this.methods[methodName] = method;
+  get db() {
+    return this.connection.db;
   }
 
   execHook(hookName, model) {
-    if (this.hooks[hookName]) {
-      this.hooks[hookName](model);
-    }
+    console.log(`about to execute hook ${hookName}`);
   }
 
-  view(viewName, options, callback) {
-    if (arguments.length === 1) {
-      return new ChainableView(this, viewName);
-    }
-    super.view(this.name, viewName, options, callback);
-  }
-
-  static init(modelName, modelSchema, connection) {
-    let schema = normalizeSchema(modelSchema);
-    let views = Model.createViews(modelName, schema);
-    return new Model(modelName, schema, views, connection);
-  }
-
-  static createViews(modelName, modelSchema) {
-    let modelViews = {};
-    Object.keys(modelSchema).forEach(property => {
-      modelViews[property] = {};
-      modelViews[property].map = `function (doc) {
-        if (doc.modelType === '${modelName}' && doc.${property}) {
-          emit(doc.${property}, doc)
+  /**
+   *
+   * @return {Promise}
+   * @api public
+   */
+  static findAll() {
+    return new Promise((resolve, reject) => {
+      this.db.view(this.modelName, "all", (error, response) => {
+        if (error) {
+          return reject(error);
         }
-      }`;
+        let docs = response.rows.map((row) => {
+          return hydrateDocument(this, row);
+        });
+        resolve(docs);
+      });
     });
-    modelViews.all = {};
-    modelViews.all.map = `function (doc) {
-      if (doc.modelType === '${modelName}') {
-        emit(doc._id, doc)
+  }
+
+  /**
+   *
+   * @return {Promise}
+   * @api public
+   */
+  static findOne() {
+    return this.findFirst();
+  }
+
+  /**
+   *
+   * @return {Promise}
+   * @api public
+   */
+  static findFirst() {
+    return this.findAll()
+      .then(documents => {
+        if (documents.length) {
+          return documents[0];
+        }
+      });
+  }
+
+  /**
+   *
+   * @return {Promise}
+   * @api public
+   */
+  static where(viewName, params = {}) {
+    return new Promise((resolve, reject) => {
+      this.db.view(this.modelName, viewName, params, (error, response) => {
+        if (error) {
+          return reject(error);
+        }
+        let docs = response.rows.map((row) => {
+          return hydrateDocument(this.modelName, this.schema, row, this.connection);
+        });
+        resolve(docs);
+      });
+    });
+  }
+
+  /*!
+   * Model init utility
+   *
+   * @param {String} modelName model name
+   * @param {Schema} schema
+   * @param {Connection} connection
+   */
+  static init(modelName, modelSchema, connection) {
+    let schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
+    schema.generateDesignDoc(modelName);
+    schema.updateDesignDoc(modelName, connection.db);
+
+    // Let's contruct the inner class representing this model
+    class GeneratedModel extends Model {
+      constructor(data={}) {
+        super(data);
+        this.modelName = modelName;
+        this.schema = schema;
+        this.connection = connection;
+        applyVirtualsFromSchema(this, schema);
       }
-    }`;
-    return modelViews;
+    }
+
+    applyMethodsFromSchema(GeneratedModel, schema);
+    applyStaticsFromSchema(GeneratedModel, schema);
+
+    //TODO should be done differently. Don't like to publish that information statically. Check what could happen with multiple connections.
+    GeneratedModel.modelName = modelName;
+    GeneratedModel.schema = schema;
+    GeneratedModel.connection = connection;
+    GeneratedModel.db = connection.db;
+
+    return GeneratedModel;
   }
 }

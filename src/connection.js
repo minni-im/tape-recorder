@@ -5,7 +5,6 @@ export default class Connection extends EventEmitter {
   constructor(base) {
     super();
     this.base = base;
-    //this.db = null;
   }
 
   /**
@@ -38,12 +37,12 @@ export default class Connection extends EventEmitter {
             throw createError;
           }
           this.db = conn.use(database);
-          this.emit("connected");
+          this.emit("connected", this.db);
           callback(this.db);
         });
       } else {
         this.db = conn.use(database);
-        this.emit("connected");
+        this.emit("connected", this.db);
         callback(this.db);
       }
     });
@@ -55,7 +54,7 @@ export default class Connection extends EventEmitter {
   }
 
   model(name, schema) {
-    let model = this.base.model(name, schema, this.db);
+    let model = this.base.model(name, schema);
     this.models[name] = model;
     return model;
   }

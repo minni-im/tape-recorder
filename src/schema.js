@@ -1,3 +1,5 @@
+import { sortObjectByKey } from "./util";
+
 const normalizeSchema = (schema) => {
   for (let key in schema) {
     if (schema[key].hasOwnProperty("type")) {
@@ -11,6 +13,7 @@ const normalizeSchema = (schema) => {
       };
     }
   }
+  return schema;
 };
 
 let getHookName = (type, name) => {
@@ -25,6 +28,7 @@ export default class Schema {
     this.schema = normalizeSchema(schema);
     this.methods = {};
     this.statics = {};
+    this.virtuals = {};
     this.views = {};
     this.hooks = {
       "beforeCreate": [],
@@ -33,6 +37,67 @@ export default class Schema {
       "beforeRemove": [],
       "afterRemove": []
     };
+    this._designUpdated = false;
+  }
+
+  /**
+   * Generate the internal views associated to all property
+   * @param {String} modelName
+   * @api private
+   */
+  generateDesignDoc(modelName) {
+    this.view("all", {
+      map: `function(doc) {
+        if (doc.modelType === "${modelName}") {
+          emit(doc._id, doc);
+        }
+      }`
+    });
+    this.names.forEach(property => {
+      this.view(property, {
+        map: `function(doc) {
+          if (doc.modelType === "${modelName}" && doc.${property}) {
+            emit(doc.${property}, doc);
+          }
+        }`
+      });
+    });
+  }
+
+  /**
+   * @param {String} modelName
+   * @param {Connection} nano object
+   * @api private
+   */
+  updateDesignDoc(modelName, connection) {
+    if (this._designUpdated) {
+      return;
+    }
+    let _designId = `_design/${modelName}`;
+    let update = (rev) => {
+      connection.insert({
+        "_id": _designId,
+        "_rev": rev ? rev : undefined,
+        "language": "javascript",
+        "views": sortObjectByKey(this.views)
+      }, (error) => {
+        if (error) {
+          console.error(`Design Update '${error.error}' Error: ${error.reason}`);
+        }
+        this._designUpdated = true;
+      });
+    };
+    connection.get(_designId, (error, design) => {
+      update(design && design._rev);
+    });
+  }
+
+  /**
+   * All schema property names
+   * @return {Array} property names
+   */
+  get names() {
+    return Object.keys(this.schema);
   }
 
   /**
@@ -82,13 +147,47 @@ export default class Schema {
   }
 
   /**
+   * Create a virtual property to the compiled model.
+   *
+   * If a hash of virtualName/ObjectGetterSetter is passed as the only argument, each pair will be added to the virtuals.
+   * @return {Schema} this
+   */
+  virtual(virtualName, getter, setter) {
+    if (typeof virtualName !== "string") {
+      for (let name in virtualName) {
+        this.virtuals[name] = {
+          get: virtualName[name].get
+        };
+        if (virtualName[name].set) {
+          this.virtuals[name].set = this.virtualName[name].set;
+        }
+      }
+    } else {
+      this.virtuals[virtualName] = {
+        get: getter
+      };
+      if (setter) {
+        this.virtuals[virtualName].set = setter;
+      }
+    }
+    return this;
+  }
+
+  /**
    * Add a view to underliying CouchDB desgin doc associated to this schema
    *
    * @param {String} name of the view
    * @param {Object} view definition
    */
   view(viewName, viewDefinition) {
+    if (viewDefinition.map) {
+      viewDefinition.map = viewDefinition.map.toString();
+    }
+    if (viewDefinition.reduce) {
+      viewDefinition.reduce = viewDefinition.reduce.toString();
+    }
     this.views[viewName] = viewDefinition;
+    return this;
   }
 
   /**
@@ -129,5 +228,19 @@ export default class Schema {
   plugin(plugin, options) {
     plugin(this, options);
     return this;
+  }
+
+  /**
+   * Get the default value according to the schema definition
+   *
+   * @param {String} name key name
+   * @return {Function} default value function to be executed
+   */
+  getDefaultFunction(name) {
+    let defaultValue = this.schema[name].default;
+    if (typeof defaultValue === "function") {
+      return defaultValue;
+    }
+    return () => defaultValue;
   }
 }
