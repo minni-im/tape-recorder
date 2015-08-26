@@ -1,4 +1,4 @@
-# tape-recorder
+# tape-recorder [![Build Status](https://travis-ci.org/minni-im/tape-recorder.svg)](https://travis-ci.org/minni-im/tape-recorder)
 
 ♫♪ |̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅| ♫♪
 Thin ORM for CouchDB on top of Nano
@@ -9,6 +9,8 @@ Thin ORM for CouchDB on top of Nano
 
 1. install [npm](http://npmjs.org)
 2. `npm install tape-recorder`
+
+## usage
 
     import recorder from "tape-recorder";
 
@@ -41,6 +43,7 @@ Thin ORM for CouchDB on top of Nano
     })
 
 
+## license
 
 copyright 2015 Benoit Charbonnier
 
