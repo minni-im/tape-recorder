@@ -128,7 +128,7 @@ export default class Model extends Document {
           return reject(error);
         }
         let docs = response.rows.map((row) => {
-          return hydrateDocument(this.modelName, this.schema, row, this.connection);
+          return hydrateDocument(this, row);
         });
         resolve(docs);
       });

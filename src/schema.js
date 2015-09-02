@@ -159,7 +159,7 @@ export default class Schema {
           get: virtualName[name].get
         };
         if (virtualName[name].set) {
-          this.virtuals[name].set = this.virtualName[name].set;
+          this.virtuals[name].set = virtualName[name].set;
         }
       }
     } else {
