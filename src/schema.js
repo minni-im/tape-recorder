@@ -16,10 +16,6 @@ const normalizeSchema = (schema) => {
   return schema;
 };
 
-let getHookName = (type, name) => {
-  return type + name[0].toUpperCase() + name.substr(1);
-};
-
 /**
  * Schema class
  */
@@ -30,13 +26,7 @@ export default class Schema {
     this.statics = {};
     this.virtuals = {};
     this.views = {};
-    this.hooks = {
-      "beforeCreate": [],
-      "beforeSave": [],
-      "afterSave": [],
-      "beforeRemove": [],
-      "afterRemove": []
-    };
+    this.hooksQueue = [];
     this._designUpdated = false;
   }
 
@@ -197,10 +187,7 @@ export default class Schema {
    * @param {Function} fn callback
    */
   pre(name, fn) {
-    let hookName = getHookName("before", name);
-    if (this.hooks[hookName]) {
-      this.hooks[hookName].push(fn);
-    }
+    this.hooksQueue.push(["pre", [name, fn]]);
     return this;
   }
 
@@ -213,10 +200,7 @@ export default class Schema {
    * @param {Function} fn callback
    */
   post(name, fn) {
-    let hookName = getHookName("after", name);
-    if (this.hooks[hookName]) {
-      this.hooks[hookName].push(fn);
-    }
+    this.hooksQueue.push(["post", [name, fn]]);
     return this;
   }
 
