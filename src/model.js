@@ -6,34 +6,37 @@ import Schema from "./schema";
  *
  * @param {Model} model
  * @param {Schema} schema
+ * @api private
  */
-let applyMethodsFromSchema = (model, schema) => {
+function applyMethodsFromSchema(model, schema) {
   for (let method in schema.methods) {
     if (typeof schema.methods[method] === "function") {
       model.prototype[method] = schema.methods[method];
     }
   }
-};
+}
 
 /*!
  * Register statics for this model
  *
  * @param {Model} model
  * @param {Schema} schema
+ * @api private
  */
-let applyStaticsFromSchema = (model, schema) => {
+function applyStaticsFromSchema(model, schema) {
   for (let stat in schema.statics) {
     model[stat] = schema.statics[stat];
   }
-};
+}
 
 /*!
  * Register virtuals properties for this model
  *
  * @param {Model} model
  * @param {Schema} schema
+ * @api private
  */
-let applyVirtualsFromSchema = (model, schema) => {
+function applyVirtualsFromSchema(model, schema) {
   for (let virtual in schema.virtuals) {
     let virtualDefinition = schema.virtuals[virtual];
     let propertyDefinition = {
@@ -44,7 +47,52 @@ let applyVirtualsFromSchema = (model, schema) => {
     }
     Object.defineProperty(model, virtual, propertyDefinition);
   }
-};
+}
+
+/*!
+ * Register hooks to be associated with this model
+ *
+ * @param {Model} model
+ * @param {Schema} schema
+ * @api private
+ */
+function attachHooksFromSchema(model, schema) {
+  let hooks = schema.hooksQueue.reduce((seed, [hookType, [methodToHook, hook]]) => {
+    if (!(methodToHook in seed)) {
+      seed[methodToHook] = { pre: [], post: [] };
+    }
+    seed[methodToHook][hookType] = hook;
+  }, {});
+
+  Object.keys(hooks).forEach((methodName) => {
+    let oldMethod = model[methodName];
+    let hook = hooks[methodName];
+    model.prototype[methodName] = () => {
+      let chain = [...hook.pre, oldMethod.bind(model, arguments), ...hook.post];
+      return new Promise((resolve, reject) => {
+        let errored = false;
+        let final = chain.reduce((onGoing, hookFn) => {
+          return onGoing
+            .then(() => {
+              if (errored) {
+                // In case of error, we don't want to execute next middlewares
+                return false;
+              }
+              return hookFn.call(model);
+            })
+            .catch((error) => {
+              errored = true;
+              reject(error);
+            });
+        }, Promise.resolve(true));
+        // Everything went OK, we can resolve;
+        final.then(() => {
+          resolve();
+        });
+      });
+    };
+  });
+}
 
 let hydrateDocument = (model, row) => {
   let GeneratedModel = model.connection.model(row.value.modelType);
@@ -68,10 +116,6 @@ export default class Model extends Document {
 
   get db() {
     return this.connection.db;
-  }
-
-  execHook(hookName, model) {
-    console.log(`about to execute hook ${hookName}`);
   }
 
   /**
@@ -169,6 +213,7 @@ export default class Model extends Document {
         this.schema = schema;
         this.connection = connection;
         applyVirtualsFromSchema(this, schema);
+        attachHooksFromSchema(this, schema);
       }
     }
 

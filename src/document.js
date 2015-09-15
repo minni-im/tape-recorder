@@ -1,3 +1,9 @@
+/**
+ * Document class
+ *
+ * @param {Object} data to be used as the document properties.
+ * @api private
+ */
 export default class Document {
   constructor(data={}) {
     ["_id", "_rev"].forEach( key => {
@@ -15,10 +21,9 @@ export default class Document {
     this.lastUpdated = new Date();
 
     if (!this.id) {
-      this.execHook("beforeCreate", this);
+      //TODO Should emit something maybe to notify this is a new Document
     }
 
-    this.execHook("beforeSave", this);
     let item = this.serialise();
 
     return new Promise((resolve, reject) => {
@@ -29,14 +34,12 @@ export default class Document {
         this.id = doc.id;
         this.rev = doc.rev;
 
-        this.execHook("afterSave", this);
         return resolve(this);
       });
     });
   }
 
   remove() {
-    this.execHook("beforeRemove", this);
     return new Promise((resolve, reject) => {
       if (!this.rev) {
         return reject({
@@ -50,13 +53,12 @@ export default class Document {
           reject({ message: error });
         }
 
-        this.execHook("afterRemove", this);
         return resolve();
       });
     });
   }
 
-  serialise() {
+  serialise(attachements = true) {
     let serialised = {};
     serialised.dateCreated = this.dateCreated;
     serialised.lastUpdated = this.lastUpdated;
@@ -75,14 +77,14 @@ export default class Document {
     });
 
     // Special attachments usecase.
-    if (this._attachments) {
+    if (attachements && this._attachments) {
       serialised._attachments = this._attachments;
     }
     return serialised;
   }
 
-  toJSON() {
-    return this.serialise();
+  toJSON(attachements = false) {
+    return this.serialise(attachements);
   }
 
   /*!
