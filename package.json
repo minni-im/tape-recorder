@@ -37,10 +37,10 @@
     "gulp": "^3.9.0",
     "gulp-babel": "^5.1.0",
     "gulp-plumber": "^1.0.1",
-    "jest-cli": "^0.4.17"
+    "jest-cli": "^0.5.4"
   },
   "node": {
-    "engine": "<= 0.10.*"
+    "engine": ">= 2"
   },
   "jest": {
     "testPathDirs": [
