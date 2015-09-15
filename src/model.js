@@ -75,13 +75,15 @@ export default class Model extends Document {
   }
 
   /**
+   * Return the entire collection
    *
+   * @param {Object} params for the underlying view
    * @return {Promise}
    * @api public
    */
-  static findAll() {
+  static findAll(params = {}) {
     return new Promise((resolve, reject) => {
-      this.db.view(this.modelName, "all", (error, response) => {
+      this.db.view(this.modelName, "all", params, (error, response) => {
         if (error) {
           return reject(error);
         }
@@ -94,21 +96,33 @@ export default class Model extends Document {
   }
 
   /**
+   * Finds a single document by its id property
    *
+   * @param {String} id of the document to retrieve
+   * @param {Object} optional params
    * @return {Promise}
    * @api public
    */
-  static findOne() {
-    return this.findFirst();
+  static findById(id, params = {}) {
+    return new Promise((resolve, reject) => {
+      this.db.get(id, params, (error, response) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve(hydrateDocument(this, { value: response }));
+      });
+    });
   }
 
   /**
+   * Return the first element of the collection
    *
+   * @param {Object} optional params
    * @return {Promise}
    * @api public
    */
-  static findFirst() {
-    return this.findAll()
+  static findFirst(params = {}) {
+    return this.findAll(params)
       .then(documents => {
         if (documents.length) {
           return documents[0];
