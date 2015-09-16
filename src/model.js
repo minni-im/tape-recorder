@@ -61,15 +61,14 @@ function attachHooksFromSchema(model, schema) {
     if (!(methodToHook in seed)) {
       seed[methodToHook] = { pre: [], post: [] };
     }
-    seed[methodToHook][hookType] = hook;
+    seed[methodToHook][hookType].push(hook);
     return seed;
   }, {});
-
   Object.keys(hooks).forEach((methodName) => {
     let oldMethod = model[methodName];
     let hook = hooks[methodName];
-    model.constructor.prototype[methodName] = () => {
-      let chain = [...hook.pre, oldMethod.bind(model, arguments), ...hook.post];
+    model.constructor.prototype[methodName] = function() {
+      let chain = [...hook.pre, oldMethod, ...hook.post];
       return new Promise((resolve, reject) => {
         let errored = false;
         let final = chain.reduce((onGoing, hookFn) => {
@@ -79,7 +78,7 @@ function attachHooksFromSchema(model, schema) {
                 // In case of error, we don't want to execute next middlewares
                 return false;
               }
-              return hookFn.call(model);
+              return hookFn.call(model) || true;
             })
             .catch((error) => {
               errored = true;
