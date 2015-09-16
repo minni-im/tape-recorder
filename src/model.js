@@ -62,12 +62,13 @@ function attachHooksFromSchema(model, schema) {
       seed[methodToHook] = { pre: [], post: [] };
     }
     seed[methodToHook][hookType] = hook;
+    return seed;
   }, {});
 
   Object.keys(hooks).forEach((methodName) => {
     let oldMethod = model[methodName];
     let hook = hooks[methodName];
-    model.prototype[methodName] = () => {
+    model.constructor.prototype[methodName] = () => {
       let chain = [...hook.pre, oldMethod.bind(model, arguments), ...hook.post];
       return new Promise((resolve, reject) => {
         let errored = false;
