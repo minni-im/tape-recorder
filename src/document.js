@@ -5,8 +5,8 @@
  * @api private
  */
 export default class Document {
-  constructor(data={}) {
-    ["_id", "_rev"].forEach( key => {
+  constructor(data = {}) {
+    ["_id", "_rev"].forEach(key => {
       if (data[key]) {
         this[key.substr(1)] = data[key];
         delete data[key];
@@ -20,11 +20,11 @@ export default class Document {
     this.dateCreated = this.dateCreated || new Date();
     this.lastUpdated = new Date();
 
-    if (!this.id) {
-      //TODO Should emit something maybe to notify this is a new Document
-    }
+    // TODO Should emit something maybe to notify this is a new Document
+    // if (!this.id) {
+    // }
 
-    let item = this.serialise();
+    const item = this.serialise();
 
     return new Promise((resolve, reject) => {
       this.db.insert(item, (error, doc) => {
@@ -42,24 +42,26 @@ export default class Document {
   remove() {
     return new Promise((resolve, reject) => {
       if (!this.rev) {
-        return reject({
+        reject({
           error: "",
           reason: "Remove failed, 'rev' needs to be supplied"
         });
+        return;
       }
 
       this.db.destroy(this.id, this.rev, (error) => {
         if (error) {
           reject({ message: error });
+          return;
         }
 
-        return resolve();
+        resolve();
       });
     });
   }
 
   serialise(attachements = true) {
-    let serialised = {};
+    const serialised = {};
     serialised.dateCreated = this.dateCreated;
     serialised.lastUpdated = this.lastUpdated;
     serialised.modelType = this.modelName;
@@ -71,7 +73,7 @@ export default class Document {
     this.schema.names.forEach(key => {
       serialised[key] = this[key];
       if (this[key] === undefined) {
-        let defaultValueFn = this.schema.getDefaultFunction(key);
+        const defaultValueFn = this.schema.getDefaultFunction(key);
         serialised[key] = defaultValueFn();
       }
     });
@@ -102,19 +104,18 @@ export default class Document {
        * @param {String} contentType attachment's content-type
        * @return {Promise}
        */
-      save: (name, data, contentType) => {
-        return new Promise((resolve, reject) => {
-          this.db.attachment.insert(this.id, name, data, contentType, {
-            "rev": this.rev
-          }, (error, response) => {
-            if (error) {
-              return reject(error);
-            }
-            this.rev = response.rev;
-            resolve(response);
-          });
+      save: (name, data, contentType) => new Promise((resolve, reject) => {
+        this.db.attachment.insert(this.id, name, data, contentType, {
+          rev: this.rev
+        }, (error, response) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          this.rev = response.rev;
+          resolve(response);
         });
-      },
+      }),
 
       /**
        * Retrieve an attachment associated to the current Document.
@@ -122,13 +123,14 @@ export default class Document {
        * @param {String} name attachment's name
        * @return {Promise}
        */
-      get: (name, params={}) => {
-        Object.assign(params, { "rev": this.rev });
+      get: (name, params = {}) => {
+        Object.assign(params, { rev: this.rev });
         return new Promise((resolve, reject) => {
           this.db.attachment.get(this.id, name, params,
             (error, response) => {
               if (error) {
-                return reject(error);
+                reject(error);
+                return;
               }
               resolve(response);
             });
@@ -141,19 +143,18 @@ export default class Document {
        * @param {String} name attachment's name
        * @return {Promise}
        */
-      remove: (name) => {
-        return new Promise((resolve, reject) => {
-          this.db.attachment.destroy(this.id, name, {
-            "rev": this.rev
-          }, (error, response) => {
-            if (error) {
-              return reject(error);
-            }
-            this.rev = response.rev;
-            resolve({"ok": true});
-          });
+      remove: (name) => new Promise((resolve, reject) => {
+        this.db.attachment.destroy(this.id, name, {
+          rev: this.rev
+        }, (error, response) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          this.rev = response.rev;
+          resolve({ ok: true });
         });
-      }
+      })
     };
   }
 }

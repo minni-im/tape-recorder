@@ -1,7 +1,7 @@
 import { sortObjectByKey } from "./util";
 
 const normalizeSchema = (schema) => {
-  for (let key in schema) {
+  for (const key in schema) {
     if (schema[key].hasOwnProperty("type")) {
       if (!schema[key].hasOwnProperty("default")) {
         schema[key].default = undefined;
@@ -63,13 +63,13 @@ export default class Schema {
     if (this._designUpdated) {
       return;
     }
-    let _designId = `_design/${modelName}`;
-    let update = (rev) => {
+    const _designId = `_design/${modelName}`;
+    const update = (rev) => {
       connection.insert({
-        "_id": _designId,
-        "_rev": rev ? rev : undefined,
-        "language": "javascript",
-        "views": sortObjectByKey(this.views)
+        _id: _designId,
+        _rev: rev,
+        language: "javascript",
+        views: sortObjectByKey(this.views)
       }, (error) => {
         if (error) {
           console.error(`Design Update '${error.error}' Error: ${error.reason}`);
@@ -98,9 +98,11 @@ export default class Schema {
   }
 
   /**
-   * Adds an instance method to documents constructed from models compiled from this schema.
+   * Adds an instance method to documents constructed from models compiled
+   * from this schema.
    *
-   * If a hash of methodName/fn pairs is passed as the only argument, each methodName/fn pair will be added as methods.
+   * If a hash of methodName/fn pairs is passed as the only argument,
+   * each methodName/fn pair will be added as methods.
    *
    * @param {String|Object} method name
    * @param {Function} [fn]
@@ -108,7 +110,7 @@ export default class Schema {
    */
   method(methodName, fn) {
     if (typeof methodName !== "string") {
-      for (let method in methodName) {
+      for (const method in methodName) {
         this.methods[method] = methodName[method];
       }
     } else {
@@ -120,14 +122,15 @@ export default class Schema {
   /**
    * Adds static "class" methods to models compiled from this schema.
    *
-   * If a hash of methodName/fn pairs is passed as the only argument, each methodName/fn pair will be added as statics.
+   * If a hash of methodName/fn pairs is passed as the only argument,
+   * each methodName/fn pair will be added as statics.
    *
    * @param {String|Object} method name
    * @param {Function} fn
    */
   static(methodName, fn) {
     if (typeof methodName !== "string") {
-      for (let method in methodName) {
+      for (const method in methodName) {
         this.statics[method] = methodName[method];
       }
     } else {
@@ -139,12 +142,13 @@ export default class Schema {
   /**
    * Create a virtual property to the compiled model.
    *
-   * If a hash of virtualName/ObjectGetterSetter is passed as the only argument, each pair will be added to the virtuals.
+   * If a hash of virtualName/ObjectGetterSetter is passed as the only argument,
+   * each pair will be added to the virtuals.
    * @return {Schema} this
    */
   virtual(virtualName, getter, setter) {
     if (typeof virtualName !== "string") {
-      for (let name in virtualName) {
+      for (const name in virtualName) {
         this.virtuals[name] = {
           get: virtualName[name].get
         };
@@ -194,7 +198,8 @@ export default class Schema {
   /**
    * Define a post hook for the document
    *
-   * Post hooks fire `on` the event emitted from document instances of models compiled from this schema.
+   * Post hooks fire `on` the event emitted from document instances of models
+   * compiled from this schema.
    *
    * @param {String} name of the event to be hooked to
    * @param {Function} fn callback
@@ -221,7 +226,7 @@ export default class Schema {
    * @return {Function} default value function to be executed
    */
   getDefaultFunction(name) {
-    let defaultValue = this.schema[name].default;
+    const defaultValue = this.schema[name].default;
     if (typeof defaultValue === "function") {
       return defaultValue;
     }

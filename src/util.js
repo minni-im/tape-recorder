@@ -1,16 +1,18 @@
-export let mixin = (Parent, ...mixins) => {
+export function mixin(Parent, ...mixins) {
   class Mixed extends Parent { }
-  for (let mixin of mixins) {
-    for (let prop of Object.keys(mixin)) {
+  for (const m of mixins) {
+    for (const prop of Object.keys(m)) {
       Mixed.prototype[prop] = mixin[prop];
     }
   }
   return Mixed;
-};
+}
 
-export let sortObjectByKey = (object) => {
-  return Object.keys(object).sort().reduce((sorted, key) => {
-    sorted[key] = object[key];
-    return sorted;
-  }, {});
-};
+export function sortObjectByKey(object) {
+  return Object.keys(object)
+    .sort()
+    .reduce((sorted, key) => {
+      sorted[key] = object[key];
+      return sorted;
+    }, {});
+}

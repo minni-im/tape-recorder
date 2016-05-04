@@ -1,31 +1,31 @@
-jest.autoMockOff();
+jest.disableAutomock();
 
-var recorder = require("../lib");
+import Recorder from "../src";
 
-describe("recorder", function() {
-  describe("models", function() {
-    it("should be defined with a name", function() {
-      expect(function() {
-        recorder.model();
+describe("recorder", () => {
+  describe("models", () => {
+    it("should be defined with a name", () => {
+      expect(() => {
+        Recorder.model();
       }).toThrow(new Error("Naming your model is mandatory."));
     });
 
-    it("should be retrieved only once being defined", function() {
-      expect(function() {
-        recorder.model("User");
+    it("should be retrieved only once being defined", () => {
+      expect(() => {
+        Recorder.model("User");
       }).toThrow(new Error("Model 'User' does not exist."));
     });
 
-    it("should not be defined twice", function() {
-      var schema = new recorder.Schema({ name: String });
+    it("should not be defined twice", () => {
+      const schema = new Recorder.Schema({ name: String });
 
       // We don't want to actually really call couchdb to update designdocs.
       schema._designUpdated = true;
 
-      recorder.model("User", schema);
+      Recorder.model("User", schema);
 
-      expect(function() {
-        recorder.model("User", schema);
+      expect(() => {
+        Recorder.model("User", schema);
       }).toThrow(new Error("Model 'User' already exists. It can't be defined twice."));
     });
   });

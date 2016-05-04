@@ -38,8 +38,8 @@ function applyStaticsFromSchema(model, schema) {
  */
 function applyVirtualsFromSchema(model, schema) {
   for (let virtual in schema.virtuals) {
-    let virtualDefinition = schema.virtuals[virtual];
-    let propertyDefinition = {
+    const virtualDefinition = schema.virtuals[virtual];
+    const propertyDefinition = {
       get: virtualDefinition.get.bind(model)
     };
     if (virtualDefinition.set) {
@@ -57,7 +57,7 @@ function applyVirtualsFromSchema(model, schema) {
  * @api private
  */
 function attachHooksFromSchema(model, schema) {
-  let hooks = schema.hooksQueue.reduce((seed, [hookType, [methodToHook, hook]]) => {
+  const hooks = schema.hooksQueue.reduce((seed, [hookType, [methodToHook, hook]]) => {
     if (!(methodToHook in seed)) {
       seed[methodToHook] = { pre: [], post: [] };
     }
@@ -65,14 +65,14 @@ function attachHooksFromSchema(model, schema) {
     return seed;
   }, {});
   Object.keys(hooks).forEach((methodName) => {
-    let oldMethod = model[methodName];
-    let hook = hooks[methodName];
-    model.constructor.prototype[methodName] = function() {
-      let chain = [...hook.pre, oldMethod, ...hook.post];
+    const oldMethod = model[methodName];
+    const hook = hooks[methodName];
+    model.constructor.prototype[methodName] = function () {
+      const chain = [...hook.pre, oldMethod, ...hook.post];
       return new Promise((resolve, reject) => {
         let errored = false;
-        let final = chain.reduce((onGoing, hookFn) => {
-          return onGoing
+        const final = chain.reduce((onGoing, hookFn) =>
+          onGoing
             .then(() => {
               if (errored) {
                 // In case of error, we don't want to execute next middlewares
@@ -83,8 +83,8 @@ function attachHooksFromSchema(model, schema) {
             .catch((error) => {
               errored = true;
               reject(error);
-            });
-        }, Promise.resolve(true));
+            })
+          , Promise.resolve(true));
         // Everything went OK, we can resolve;
         final.then(() => {
           resolve();
@@ -94,10 +94,10 @@ function attachHooksFromSchema(model, schema) {
   });
 }
 
-let hydrateDocument = (model, row) => {
-  let GeneratedModel = model.connection.model(row.value.modelType);
+function hydrateDocument(model, row) {
+  const GeneratedModel = model.connection.model(row.value.modelType);
   return new GeneratedModel(row.value);
-};
+}
 
 /**
  * Model class
@@ -126,17 +126,17 @@ export default class Model extends Document {
    * @api public
    */
   static findAll(params = {}) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) =>
       this.db.view(this.modelName, "all", params, (error, response) => {
         if (error) {
           return reject(error);
         }
-        let docs = response.rows.map((row) => {
-          return hydrateDocument(this, row);
-        });
-        resolve(docs);
-      });
-    });
+        const docs = response.rows
+          .map((row) => hydrateDocument(this, row));
+
+        return resolve(docs);
+      })
+    );
   }
 
   /**
@@ -153,7 +153,7 @@ export default class Model extends Document {
         if (error) {
           return reject(error);
         }
-        resolve(hydrateDocument(this, { value: response }));
+        return resolve(hydrateDocument(this, { value: response }));
       });
     });
   }
@@ -171,6 +171,7 @@ export default class Model extends Document {
         if (documents.length) {
           return documents[0];
         }
+        return null;
       });
   }
 
@@ -185,10 +186,9 @@ export default class Model extends Document {
         if (error) {
           return reject(error);
         }
-        let docs = response.rows.map((row) => {
-          return hydrateDocument(this, row);
-        });
-        resolve(docs);
+        const docs = response.rows
+          .map((row) => hydrateDocument(this, row));
+        return resolve(docs);
       });
     });
   }
@@ -201,13 +201,13 @@ export default class Model extends Document {
    * @param {Connection} connection
    */
   static init(modelName, modelSchema, connection) {
-    let schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
+    const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
     schema.generateDesignDoc(modelName);
     schema.updateDesignDoc(modelName, connection.db);
 
     // Let's contruct the inner class representing this model
     class GeneratedModel extends Model {
-      constructor(data={}) {
+      constructor(data = {}) {
         super(data);
         this.modelName = modelName;
         this.schema = schema;
@@ -220,7 +220,9 @@ export default class Model extends Document {
     applyMethodsFromSchema(GeneratedModel, schema);
     applyStaticsFromSchema(GeneratedModel, schema);
 
-    //TODO should be done differently. Don't like to publish that information statically. Check what could happen with multiple connections.
+    /* TODO should be done differently. Don't like to publish that information
+    statically. Check what could happen with multiple connections.
+    */
     GeneratedModel.modelName = modelName;
     GeneratedModel.schema = schema;
     GeneratedModel.connection = connection;
