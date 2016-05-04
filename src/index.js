@@ -10,7 +10,7 @@ class Recorder {
     this.models = {};
     this.plugins = [];
 
-    let conn = new Connection(this);
+    const conn = new Connection(this);
     conn.models = this.models;
     conn.once("connected", (db) => {
       conn.db = db;
@@ -29,9 +29,9 @@ class Recorder {
    * @return {Recorder} this
    * @api public
    */
-  connect() {
-    let conn = this.connection;
-    conn.open.apply(conn, arguments);
+  connect(...options) {
+    const conn = this.connection;
+    conn.open(...options);
     return this;
   }
 
@@ -72,7 +72,8 @@ class Recorder {
   /**
    * Define a model or retrieve it
    *
-   * Models defined on the `recorder` instance are available to all connection created by the same `recorder` instance.
+   * Models defined on the `recorder` instance are available to all connection
+   * created by the same `recorder` instance.
    *
    * @param {String} name model name
    * @param {Schema} [schema]
@@ -81,8 +82,9 @@ class Recorder {
    * @api public
    */
   model(name, schema) {
+    /* eslint prefer-rest-params: 0 */
     if (arguments.length === 0) {
-      throw new Error(`Naming your model is mandatory.`);
+      throw new Error("Naming your model is mandatory.");
     }
     if (arguments.length === 1 || schema === undefined) {
       if (!this.models[name]) {
@@ -93,7 +95,7 @@ class Recorder {
     if (this.models[name]) {
       throw new Error(`Model '${name}' already exists. It can't be defined twice.`);
     }
-    let model = Model.init(name, schema, this.connection);
+    const model = Model.init(name, schema, this.connection);
     this.models[name] = model;
     return model;
   }
