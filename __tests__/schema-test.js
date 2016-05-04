@@ -1,6 +1,7 @@
-jest.unmock("../src/schema");
-
 import Schema from "../src/schema";
+
+// Thank to babel-jest this call will be hoisted before above import
+jest.unmock("../src/schema");
 
 describe("Schema", () => {
   let User;

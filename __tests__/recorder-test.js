@@ -1,6 +1,7 @@
-jest.disableAutomock();
-
 import Recorder from "../src";
+
+// Thank to babel-jest this call will be hoisted before above import
+jest.disableAutomock();
 
 describe("recorder", () => {
   describe("models", () => {
