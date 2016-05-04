@@ -1,6 +1,6 @@
 {
   "name": "tape-recorder",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "description": "Thin ORM layer for couchdb on top of nano",
   "main": "src/index.js",
   "scripts": {
