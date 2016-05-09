@@ -12,9 +12,6 @@ class Recorder {
 
     const conn = new Connection(this);
     conn.models = this.models;
-    conn.once("connected", (db) => {
-      conn.db = db;
-    });
     this.connection = conn;
   }
 
