@@ -1,3 +1,4 @@
+/* eslint no-restricted-syntax: 0 */
 import Document from "./document";
 import Schema from "./schema";
 
@@ -9,7 +10,7 @@ import Schema from "./schema";
  * @api private
  */
 function applyMethodsFromSchema(model, schema) {
-  for (let method in schema.methods) {
+  for (const method in schema.methods) {
     if (typeof schema.methods[method] === "function") {
       model.prototype[method] = schema.methods[method];
     }
@@ -24,8 +25,10 @@ function applyMethodsFromSchema(model, schema) {
  * @api private
  */
 function applyStaticsFromSchema(model, schema) {
-  for (let stat in schema.statics) {
-    model[stat] = schema.statics[stat];
+  for (const stat in schema.statics) {
+    if (schema.statics.hasOwnProperty(stat)) {
+      model[stat] = schema.statics[stat];
+    }
   }
 }
 
@@ -37,7 +40,10 @@ function applyStaticsFromSchema(model, schema) {
  * @api private
  */
 function applyVirtualsFromSchema(model, schema) {
-  for (let virtual in schema.virtuals) {
+  for (const virtual in schema.virtuals) {
+    if (!schema.virtuals.hasOwnProperty(virtual)) {
+      continue;
+    }
     const virtualDefinition = schema.virtuals[virtual];
     const propertyDefinition = {
       get: virtualDefinition.get.bind(model)
