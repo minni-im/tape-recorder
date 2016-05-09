@@ -13,6 +13,10 @@ export default class Connection extends EventEmitter {
    * Open the connection to couchdb
    */
   open(url, database, options = {}, callback = nope) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
     const conn = nano(Object.assign({ url }, options));
     conn.db.get(database, error => {
       if (error && error.error === "not_found") {
