@@ -1,8 +1,5 @@
 import Schema from "../src/schema";
 
-// Thank to babel-jest this call will be hoisted before above import
-jest.unmock("../src/schema");
-
 describe("Schema", () => {
   let User;
   let schema;
@@ -12,14 +9,14 @@ describe("Schema", () => {
       firstName: String,
       lastName: {
         type: String,
-        default: "Doe"
+        default: "Doe",
       },
       birthDate: {
         type: Date,
         default() {
           return new Date();
-        }
-      }
+        },
+      },
     };
     User = new Schema(schema);
   });
@@ -34,14 +31,6 @@ describe("Schema", () => {
 
   it("should return proper default value when calling `getDefaultFunction()`", () => {
     expect(User.getDefaultFunction("lastName").call(User)).toBe("Doe");
-  });
-
-  it("should be possible to alter a Schema instance with `add()`", () => {
-    User.add({
-      nickName: String
-    });
-    expect(User.schema.nickName).toBeDefined();
-    expect(User.schema.nickName.type).toBe(String);
   });
 
   describe("methods", () => {
@@ -59,7 +48,7 @@ describe("Schema", () => {
 
     it("should understand calls using `methods({ ... })`", () => {
       User.method({
-        age: getAge
+        age: getAge,
       });
       expect(Object.keys(User.methods).length).toBe(1);
       expect(User.methods.age).toBeDefined();
@@ -87,7 +76,7 @@ describe("Schema", () => {
     it("should understand calls to `virtual({ ... })`", () => {
       User.virtual({
         fullName: { get: fullNameGetter },
-        nickName: { get: nickNameGetter }
+        nickName: { get: nickNameGetter },
       });
       expect(Object.keys(User.virtuals).length).toBe(2);
       expect(User.virtuals.fullName).toBeDefined();
@@ -108,10 +97,10 @@ describe("Schema", () => {
       expect(User.statics.findByFullName).toBe(findByFullName);
     });
 
-    it("should understand calls via `static({ ..})`", () => {
+    it("should understand calls via `static({...})`", () => {
       User.static({
         findByFullName,
-        findByAge
+        findByAge,
       });
       expect(Object.keys(User.statics).length).toBe(2);
       expect(User.statics.findByFullName).toBe(findByFullName);
@@ -123,7 +112,7 @@ describe("Schema", () => {
     it("should be defined via `view()` calls", () => {
       const viewDefinition = {
         map() {},
-        reduce() {}
+        reduce() {},
       };
       User.view("fullName", viewDefinition);
       expect(User.views.fullName).toBeDefined();

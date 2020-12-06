@@ -1,8 +1,5 @@
 import recorder from "../src";
 
-// Thank to babel-jest this call will be hoisted before above import
-jest.disableAutomock();
-
 describe("recorder", () => {
   describe("models", () => {
     it("should be defined with a name", () => {
@@ -27,7 +24,9 @@ describe("recorder", () => {
 
       expect(() => {
         recorder.model("User", schema);
-      }).toThrow(new Error("Model 'User' already exists. It can't be defined twice."));
+      }).toThrow(
+        new Error("Model 'User' already exists. It can't be defined twice.")
+      );
     });
   });
 });

@@ -12,37 +12,41 @@ Thin ORM for CouchDB on top of Nano
 
 ## usage
 
-``` javascript
+```javascript
 import recorder from "tape-recorder";
 
 let UserSchema = new recorder.Schema({
   firstName: String,
   lastName: String,
-  birthDate: { type: Date, default: Date.now }
+  birthDate: { type: Date, default: Date.now },
 });
 
-UserSchema
-    .method("age", () => {
-        let now = new Date().getFullYear();
-        return now - new Date(this.birthDate).getFullYear();
-    })
-    .virtual("fullName",
-        () => { return `${this.firstName} ${this.lastName}`; },
-        (value) => { [this.firstName, this.lastName] = value.split(" "); }
-    );
+UserSchema.method("age", () => {
+  let now = new Date().getFullYear();
+  return now - new Date(this.birthDate).getFullYear();
+}).virtual(
+  "fullName",
+  () => {
+    return `${this.firstName} ${this.lastName}`;
+  },
+  (value) => {
+    [this.firstName, this.lastName] = value.split(" ");
+  }
+);
 
 let User = recorder.model("User", UserSchema);
 
 let me = new User({
   firstName: "John",
   lastName: "Diggle",
-  birthDate: new Date("1975/04/01")
+  birthDate: new Date("1975/04/01"),
 });
 
-me.save((error, savedMe) => {
-  console.log(`Hello, I am ${savedMe.fullname}, and I'm ${savedMe.age()} years old`);
-  // Hello, I am John Diggle, and I am 40 years old
-});
+const savedMe = await me.save();
+console.log(
+  `Hello, I am ${savedMe.fullname}, and I'm ${savedMe.age()} years old`
+);
+// Hello, I am John Diggle, and I am 40 years old
 ```
 
 ## license

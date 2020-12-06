@@ -1,0 +1,16 @@
+{
+  "printWidth": 120,
+  "useTabs": true,
+  "tabWidth": 4,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": ["package.json", ".eslintrc.yml", ".prettierrc.json"],
+      "options": {
+        "useTabs": false,
+        "tabWidth": 2
+      }
+    }
+  ]
+}

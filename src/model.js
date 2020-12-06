@@ -1,4 +1,4 @@
-/* eslint no-restricted-syntax: 0 */
+/* eslint-disable max-classes-per-file */
 import Document from "./document";
 import Schema from "./schema";
 
@@ -10,11 +10,11 @@ import Schema from "./schema";
  * @api private
  */
 function applyMethodsFromSchema(model, schema) {
-  for (const method in schema.methods) {
-    if (typeof schema.methods[method] === "function") {
-      model.prototype[method] = schema.methods[method];
-    }
-  }
+	Object.keys(schema.methods).forEach((method) => {
+		if (typeof schema.methods[method] === "function") {
+			model.prototype[method] = schema.methods[method];
+		}
+	});
 }
 
 /*!
@@ -25,11 +25,9 @@ function applyMethodsFromSchema(model, schema) {
  * @api private
  */
 function applyStaticsFromSchema(model, schema) {
-  for (const stat in schema.statics) {
-    if (schema.statics.hasOwnProperty(stat)) {
-      model[stat] = schema.statics[stat];
-    }
-  }
+	Object.keys(schema.statics).forEach((method) => {
+		model[method] = schema.statics[method];
+	});
 }
 
 /*!
@@ -40,19 +38,16 @@ function applyStaticsFromSchema(model, schema) {
  * @api private
  */
 function applyVirtualsFromSchema(model, schema) {
-  for (const virtual in schema.virtuals) {
-    if (!schema.virtuals.hasOwnProperty(virtual)) {
-      continue;
-    }
-    const virtualDefinition = schema.virtuals[virtual];
-    const propertyDefinition = {
-      get: virtualDefinition.get.bind(model)
-    };
-    if (virtualDefinition.set) {
-      propertyDefinition.set = virtualDefinition.set.bind(model);
-    }
-    Object.defineProperty(model, virtual, propertyDefinition);
-  }
+	Object.keys(schema.virtuals).forEach((virtual) => {
+		const virtualDefinition = schema.virtuals[virtual];
+		const propertyDefinition = {
+			get: virtualDefinition.get.bind(model),
+		};
+		if (virtualDefinition.set) {
+			propertyDefinition.set = virtualDefinition.set.bind(model);
+		}
+		Object.defineProperty(model, virtual, propertyDefinition);
+	});
 }
 
 /*!
@@ -63,46 +58,49 @@ function applyVirtualsFromSchema(model, schema) {
  * @api private
  */
 function attachHooksFromSchema(model, schema) {
-  const hooks = schema.hooksQueue.reduce((seed, [hookType, [methodToHook, hook]]) => {
-    if (!(methodToHook in seed)) {
-      seed[methodToHook] = { pre: [], post: [] };
-    }
-    seed[methodToHook][hookType].push(hook);
-    return seed;
-  }, {});
-  Object.keys(hooks).forEach((methodName) => {
-    const oldMethod = model[methodName];
-    const hook = hooks[methodName];
-    model.constructor.prototype[methodName] = function () {
-      const chain = [...hook.pre, oldMethod, ...hook.post];
-      return new Promise((resolve, reject) => {
-        let errored = false;
-        const final = chain.reduce((onGoing, hookFn) =>
-          onGoing
-            .then(() => {
-              if (errored) {
-                // In case of error, we don't want to execute next middlewares
-                return false;
-              }
-              return hookFn.call(model) || true;
-            })
-            .catch((error) => {
-              errored = true;
-              reject(error);
-            })
-          , Promise.resolve(true));
-        // Everything went OK, we can resolve;
-        final.then(() => {
-          resolve();
-        });
-      });
-    };
-  });
+	const hooks = schema.hooksQueue.reduce((seed, [hookType, [methodToHook, hook]]) => {
+		if (!(methodToHook in seed)) {
+			seed[methodToHook] = { pre: [], post: [] };
+		}
+		seed[methodToHook][hookType].push(hook);
+		return seed;
+	}, {});
+	Object.keys(hooks).forEach((methodName) => {
+		const oldMethod = model[methodName];
+		const hook = hooks[methodName];
+		model.constructor.prototype[methodName] = function () {
+			const chain = [...hook.pre, oldMethod, ...hook.post];
+			return new Promise((resolve, reject) => {
+				let errored = false;
+				const final = chain.reduce(
+					(onGoing, hookFn) =>
+						onGoing
+							.then(() => {
+								if (errored) {
+									// In case of error, we don't want to execute next middlewares
+									return false;
+								}
+								return hookFn.call(model) || true;
+							})
+							.catch((error) => {
+								errored = true;
+								reject(error);
+							}),
+					Promise.resolve(true),
+				);
+				// Everything went OK, we can resolve;
+				final.then(() => {
+					resolve();
+				});
+			});
+		};
+	});
 }
 
 function hydrateDocument(model, row) {
-  const GeneratedModel = model.connection.model(row.value.modelType);
-  return new GeneratedModel(row.value);
+	const doc = row["doc" || "value"];
+	const GeneratedModel = model.connection.model(doc.modelType);
+	return new GeneratedModel(doc);
 }
 
 /**
@@ -115,125 +113,118 @@ function hydrateDocument(model, row) {
  * @api public
  */
 export default class Model extends Document {
-  constructor(data) {
-    super(data);
-    Object.assign(this, data);
-  }
+	constructor(data) {
+		super(data);
+		Object.assign(this, data);
+	}
 
-  get db() {
-    return this.connection.db;
-  }
+	get db() {
+		return this.connection.db;
+	}
 
-  /**
-   * Return the entire collection
-   *
-   * @param {Object} params for the underlying view
-   * @return {Promise}
-   * @api public
-   */
-  static findAll(params = {}) {
-    return new Promise((resolve, reject) =>
-      this.db.view(this.modelName, "all", params, (error, response) => {
-        if (error) {
-          return reject(error);
-        }
-        const docs = response.rows
-          .map((row) => hydrateDocument(this, row));
+	/**
+	 * Return the entire collection
+	 *
+	 * @param {Object} params for the underlying view
+	 * @return {Promise}
+	 * @api public
+	 */
+	static findAll(params = {}) {
+		return this.db
+			.view(this.modelName, "all", {
+				include_docs: true,
+				...params,
+			})
+			.then(
+				(response) => response.rows.map((row) => hydrateDocument(this, row)),
+				(error) => console.error(error),
+			);
+	}
 
-        return resolve(docs);
-      })
-    );
-  }
+	/**
+	 * Finds a single document by its id property
+	 *
+	 * @param {String} id of the document to retrieve
+	 * @param {Object} optional params
+	 * @return {Promise}
+	 * @api public
+	 */
+	static findById(id, params = {}) {
+		return this.db.get(id, params).then(
+			(raw) => hydrateDocument(this, { value: raw }),
+			(error) => console.error(error),
+		);
+	}
 
-  /**
-   * Finds a single document by its id property
-   *
-   * @param {String} id of the document to retrieve
-   * @param {Object} optional params
-   * @return {Promise}
-   * @api public
-   */
-  static findById(id, params = {}) {
-    return new Promise((resolve, reject) => {
-      this.db.get(id, params, (error, response) => {
-        if (error) {
-          return reject(error);
-        }
-        return resolve(hydrateDocument(this, { value: response }));
-      });
-    });
-  }
+	/**
+	 * Return the first element of the collection
+	 *
+	 * @param {Object} optional params
+	 * @return {Promise}
+	 * @api public
+	 */
+	static findFirst(params = {}) {
+		return this.findAll(params).then((documents) => {
+			if (documents.length) {
+				return documents[0];
+			}
+			return null;
+		});
+	}
 
-  /**
-   * Return the first element of the collection
-   *
-   * @param {Object} optional params
-   * @return {Promise}
-   * @api public
-   */
-  static findFirst(params = {}) {
-    return this.findAll(params)
-      .then(documents => {
-        if (documents.length) {
-          return documents[0];
-        }
-        return null;
-      });
-  }
+	/**
+	 *
+	 * @return {Promise}
+	 * @api public
+	 */
+	static where(viewName, params = {}) {
+		return this.dd
+			.view(this.modelName, viewName, {
+				include_docs: true,
+				...params,
+			})
+			.then(
+				(response) => response.rows.map((row) => hydrateDocument(this, row)),
+				(error) => {
+					console.error(error);
+				},
+			);
+	}
 
-  /**
-   *
-   * @return {Promise}
-   * @api public
-   */
-  static where(viewName, params = {}) {
-    return new Promise((resolve, reject) => {
-      this.db.view(this.modelName, viewName, params, (error, response) => {
-        if (error) {
-          return reject(error);
-        }
-        const docs = response.rows
-          .map((row) => hydrateDocument(this, row));
-        return resolve(docs);
-      });
-    });
-  }
+	/*!
+	 * Model init utility
+	 *
+	 * @param {String} modelName model name
+	 * @param {Schema} schema
+	 * @param {Connection} connection
+	 */
+	static init(modelName, modelSchema, connection) {
+		const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
+		schema.updateDesignDoc(modelName, connection.db);
 
-  /*!
-   * Model init utility
-   *
-   * @param {String} modelName model name
-   * @param {Schema} schema
-   * @param {Connection} connection
-   */
-  static init(modelName, modelSchema, connection) {
-    const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
-    schema.generateDesignDoc(modelName);
-    schema.updateDesignDoc(modelName, connection.db);
+		// Let's contruct the inner class representing this model
+		class GeneratedModel extends Model {
+			constructor(data = {}) {
+				super(data);
+				this.modelName = modelName;
+				this.schema = schema;
+				this.connection = connection;
+				applyVirtualsFromSchema(this, schema);
+				attachHooksFromSchema(this, schema);
+			}
+		}
 
-    // Let's contruct the inner class representing this model
-    class GeneratedModel extends Model {
-      constructor(data = {}) {
-        super(data);
-        this.modelName = modelName;
-        this.schema = schema;
-        this.connection = connection;
-        applyVirtualsFromSchema(this, schema);
-        attachHooksFromSchema(this, schema);
-      }
-    }
+		applyMethodsFromSchema(GeneratedModel, schema);
+		applyStaticsFromSchema(GeneratedModel, schema);
 
-    applyMethodsFromSchema(GeneratedModel, schema);
-    applyStaticsFromSchema(GeneratedModel, schema);
-
-    /* TODO should be done differently. Don't like to publish that information
+		/* TODO: should be done differently. Don't like to publish that information
     statically. Check what could happen with multiple connections.
     */
-    GeneratedModel.modelName = modelName;
-    GeneratedModel.schema = schema;
-    GeneratedModel.connection = connection;
-    GeneratedModel.db = connection.db;
+		GeneratedModel.modelName = modelName;
+		GeneratedModel.schema = schema;
+		GeneratedModel.connection = connection;
+		GeneratedModel.db = connection.db;
 
-    return GeneratedModel;
-  }
+		return GeneratedModel;
+	}
 }
