@@ -63,20 +63,18 @@ export default class Schema {
 		});
 
 		const _designId = `_design/${modelName}`;
+		let design;
 		try {
-			const { _rev } = await connection.get(_designId);
-			await connection.insert({
-				id: _designId,
-				rev: _rev,
-				language: "javascript",
-				views: sortObjectByKey(this.views),
-			});
-			this._designUpdated = true;
-		} catch (error) {
-			if (error) {
-				console.error(`Design Update '${error.error}' Error: ${error.reason}`);
-			}
-		}
+			design = await connection.get(_designId);
+		} catch (error) {}
+		await connection.insert({
+			_id: _designId,
+			_rev: design && design._rev,
+			language: "javascript",
+			views: sortObjectByKey(this.views),
+		});
+		console.log(`Recorder: Schema ${modelName} updated`);
+		this._designUpdated = true;
 	}
 
 	/**

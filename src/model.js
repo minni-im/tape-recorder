@@ -173,12 +173,13 @@ export default class Model extends Document {
 	}
 
 	/**
+	 * Return the results of a view query for a given viewName.
 	 *
 	 * @return {Promise}
 	 * @api public
 	 */
 	static where(viewName, params = {}) {
-		return this.dd
+		return this.db
 			.view(this.modelName, viewName, {
 				include_docs: true,
 				...params,
@@ -198,17 +199,31 @@ export default class Model extends Document {
 	 * @param {Schema} schema
 	 * @param {Connection} connection
 	 */
-	static async init(modelName, modelSchema, connection) {
+	static init(modelName, modelSchema, connection) {
 		const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
-		await schema.updateDesignDoc(modelName, connection.db);
+		schema.updateDesignDoc(modelName, connection.db);
 
 		// Let's contruct the inner class representing this model
 		class GeneratedModel extends Model {
 			constructor(data = {}) {
 				super(data);
-				this.modelName = modelName;
-				this.schema = schema;
-				this.connection = connection;
+				Object.defineProperties(this, {
+					modelName: {
+						enumerable: false,
+						writable: false,
+						value: modelName,
+					},
+					schema: {
+						enumerable: false,
+						writable: false,
+						value: schema,
+					},
+					connection: {
+						enumerable: false,
+						writable: false,
+						value: connection,
+					},
+				});
 				applyVirtualsFromSchema(this, schema);
 				attachHooksFromSchema(this, schema);
 			}
@@ -217,14 +232,13 @@ export default class Model extends Document {
 		applyMethodsFromSchema(GeneratedModel, schema);
 		applyStaticsFromSchema(GeneratedModel, schema);
 
-		/* TODO: should be done differently. Don't like to publish that information
-    statically. Check what could happen with multiple connections.
-    */
-		GeneratedModel.modelName = modelName;
-		GeneratedModel.schema = schema;
-		GeneratedModel.connection = connection;
-		GeneratedModel.db = connection.db;
-
+		Object.defineProperties(GeneratedModel, {
+			// Used by toString()
+			name: { writable: false, value: `Recorder<${modelName}>` },
+			modelName: { writable: false, value: modelName },
+			connection: { writable: false, value: connection },
+			db: { writable: false, value: connection.db },
+		});
 		return GeneratedModel;
 	}
 }
