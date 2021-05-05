@@ -198,9 +198,9 @@ export default class Model extends Document {
 	 * @param {Schema} schema
 	 * @param {Connection} connection
 	 */
-	static init(modelName, modelSchema, connection) {
+	static async init(modelName, modelSchema, connection) {
 		const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
-		schema.updateDesignDoc(modelName, connection.db);
+		await schema.updateDesignDoc(modelName, connection.db);
 
 		// Let's contruct the inner class representing this model
 		class GeneratedModel extends Model {

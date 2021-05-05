@@ -1,13 +1,15 @@
-extends: airbnb-base
-
-rules:
-  indent: ["error", "tab"]
-  no-tabs: ["error", { allowIndentationTabs: true }]
-  func-style: 0
-  func-names: 0
-  comma-dangle: 0
-  no-console: 0
-  no-param-reassign: 0
-  no-underscore-dangle: 0
-  keyword-spacing: 2
-  quotes: [2, "double", "avoid-escape"]
+extends: ["eslint:recommended", "prettier"]
+parserOptions:
+	sourceType: "module"
+	ecmaVersion: 2019
+# rules:
+#   indent: ["error", "tab"]
+#   no-tabs: ["error", { allowIndentationTabs: true }]
+#   func-style: 0
+#   func-names: 0
+#   comma-dangle: 0
+#   no-console: 0
+#   no-param-reassign: 0
+#   no-underscore-dangle: 0
+#   keyword-spacing: 2
+#   quotes: [2, "double", "avoid-escape"]
