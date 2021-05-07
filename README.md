@@ -1,4 +1,4 @@
-# tape-recorder
+# tape-recorder ![Build](https://github.com/minni-im/tape-recorder/actions/workflows/node.js.yml/badge.svg)
 
 ♫♪ |̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅| ♫♪
 Thin ORM for CouchDB on top of Nano

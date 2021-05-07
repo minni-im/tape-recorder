@@ -298,7 +298,7 @@ class Model extends Document {
 			return raw ? document : hydrateDocument(this, { value: document });
 		} catch (error) {
 			console.error(error);
-			throw new Error(`[Recorder] An error occured retrieving document '${this.modelName}#findById(${id})'`);
+			throw new Error(`[Recorder] An error occured retrieving document '${this.modelName}#findById("${id}")'`);
 		}
 	}
 

@@ -200,4 +200,144 @@ design.run();
 // ██║ ╚═╝ ██║╚██████╔╝██████╔╝███████╗███████╗
 // ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝
 const model = createSuiteWithConnection("Model usage");
+
+model.before.each(async (context) => {
+	context.User = await context.registerModel("User", {
+		firstname: String,
+	});
+});
+
+model("creates model with static methods", async ({ User }) => {
+	["findById", "findFirst", "findAll", "where"].forEach((method) => {
+		assert.ok(User[method]);
+		assert.type(User[method], "function");
+	});
+});
+
+model("makes advantage of default values", async ({ registerModel }) => {
+	const Animal = await registerModel("Animal", {
+		race: {
+			type: String,
+			default: "jack russel",
+		},
+		color: {
+			type: String,
+			default: () => "white",
+		},
+	});
+	const doggo = new Animal();
+	const serialised = doggo.toJSON();
+	assert.ok(serialised);
+	assert.equal(serialised.race, "jack russel");
+	assert.equal(serialised.color, "white");
+});
+
+model("update document with id and rev on initial save", async ({ User }) => {
+	const user = new User({ firstname: "benoit" });
+	await user.save();
+	assert.ok(user._id);
+	assert.ok(user._rev);
+	assert.type(user._id, "string");
+	assert.type(user._rev, "string");
+
+	await user.delete();
+});
+
+model("throws error if save() is called with wrong _rev", async ({ User }) => {
+	const user = new User({ firstname: "benoit" });
+	await user.save();
+	const { _rev } = user;
+	user._rev = "fakeone";
+	try {
+		await user.save();
+		assert.unreachable("never goes there");
+	} catch (err) {
+		assert.ok("threw error");
+		assert.instance(err, Error);
+	}
+
+	// Cleanup
+	user._rev = _rev;
+	await user.delete();
+});
+
+model("throws error if delete() is called without a _rev", async ({ User }) => {
+	const user = new User({ firstname: "benoit" });
+	// Never saved intially, so no _id, nor _rev
+	try {
+		await user.delete();
+		assert.unreachable("never goes there");
+	} catch (err) {
+		assert.ok("threw error");
+		assert.instance(err, Error);
+	}
+});
+
+model("throws error if delete() is called with wrong _id or _rev", async ({ User }) => {
+	const user = new User({ firstname: "benoit" });
+	await user.save();
+	const { _id } = user;
+	user._id = "fakeone";
+	try {
+		await user.delete();
+		assert.unreachable("never goes there");
+	} catch (err) {
+		assert.ok("threw error");
+		assert.instance(err, Error);
+	}
+
+	// Cleanup
+	user._id = _id;
+	await user.delete();
+});
+
+model("can findById", async ({ User }) => {
+	const user = new User({ firstname: "benoit" });
+	await user.save();
+
+	const fetched = await User.findById(user._id);
+	assert.ok(fetched);
+	assert.equal(user._id, fetched._id);
+	assert.equal(user._rev, fetched._rev);
+	assert.equal(user.firstname, fetched.firstname);
+	assert.equal(user.dateCreated.toISOString(), fetched.dateCreated);
+	assert.equal(user.lastUpdated.toISOString(), fetched.lastUpdated);
+
+	await user.delete();
+});
+
+model("throws an error with findById with invalid/unknown id", async ({ User }) => {
+	try {
+		await User.findById("thisdoesnotexistindb")();
+		assert.unreachable("should have thrown");
+	} catch (err) {
+		assert.ok("threw error");
+		assert.instance(err, Error);
+	}
+});
+
+model("returns empty array on findAll with no result", async ({ User }) => {
+	const all = await User.findAll();
+	assert.ok(all);
+	assert.equal(all, []);
+});
+
+model("can findAll", async ({ User }) => {
+	const john = new User({ firstname: "john" });
+	const jane = new User({ firstname: "jane" });
+	await john.save();
+	await jane.save();
+	const all = await User.findAll();
+	assert.equal(all.length, 2);
+	assert.equal(all[0].firstname, "john");
+	assert.equal(all[1].firstname, "jane");
+
+	await john.delete();
+	await jane.delete();
+});
+
+model("can findFirst", async () => {});
+
+model("can use specified view", async () => {});
+
 model.run();

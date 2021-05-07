@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "test": "uvu",
-    "test:watch": "watchlist src tests -- npm test"
+    "test:watch": "watchlist src tests -- npm test",
+    "test:coverage": "c8 --include=src npm test && c8 report --reporter=html"
   },
   "repository": {
     "type": "git",
@@ -38,6 +39,7 @@
     "nano": "^9.0.3"
   },
   "devDependencies": {
+    "c8": "^7.7.2",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
     "node-fetch": "^2.6.1",
