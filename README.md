@@ -34,7 +34,7 @@ UserSchema.method("age", () => {
   },
 );
 
-const User = registerModel("User", UserSchema);
+const User = await registerModel("User", UserSchema);
 
 const me = new User({
   firstName: "John",
