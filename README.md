@@ -18,28 +18,28 @@ import recorder from "@minni-im/tape-recorder";
 const { defineSchema, registerModel } = recorder("http://localhost:5984", "myDb");
 
 const UserSchema = defineSchema({
-	firstName: String,
-	lastName: String,
-	birthDate: { type: Date, default: Date.now },
+  firstName: String,
+  lastName: String,
+  birthDate: { type: Date, default: Date.now },
 });
 
 UserSchema.method("age", () => {
-	let now = new Date().getFullYear();
-	return now - new Date(this.birthDate).getFullYear();
+  let now = new Date().getFullYear();
+  return now - new Date(this.birthDate).getFullYear();
 }).virtual(
-	"fullName",
-	() => `${this.firstName} ${this.lastName}`,
-	(value) => {
-		[this.firstName, this.lastName] = value.split(" ");
-	},
+  "fullName",
+  () => `${this.firstName} ${this.lastName}`,
+  (value) => {
+    [this.firstName, this.lastName] = value.split(" ");
+  },
 );
 
 const User = registerModel("User", UserSchema);
 
 const me = new User({
-	firstName: "John",
-	lastName: "Diggle",
-	birthDate: new Date("1975/04/01"),
+  firstName: "John",
+  lastName: "Diggle",
+  birthDate: new Date("1975/04/01"),
 });
 
 await me.save();
