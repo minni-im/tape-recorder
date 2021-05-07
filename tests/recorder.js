@@ -308,7 +308,7 @@ model("can findById", async ({ User }) => {
 
 model("throws an error with findById with invalid/unknown id", async ({ User }) => {
 	try {
-		await User.findById("thisdoesnotexistindb")();
+		await User.findById("thisdoesnotexistindb");
 		assert.unreachable("should have thrown");
 	} catch (err) {
 		assert.ok("threw error");
