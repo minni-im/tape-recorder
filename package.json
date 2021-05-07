@@ -1,17 +1,18 @@
 {
   "name": "@minni-im/tape-recorder",
-  "version": "3.0.0-beta.4",
+  "version": "3.0.0-beta.5",
   "description": "Thin ORM layer for couchdb on top of nano",
   "type": "module",
   "exports": {
     "import": "./src/index.js"
   },
   "files": [
-    "src",
+    "src/index.js",
     "README.md"
   ],
   "scripts": {
-    "test": "jest"
+    "test": "uvu",
+    "test:watch": "watchlist src tests -- npm test"
   },
   "repository": {
     "type": "git",
@@ -37,18 +38,14 @@
     "nano": "^9.0.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.8",
-    "@babel/core": "^7.12.9",
-    "@babel/eslint-parser": "^7.12.1",
-    "@babel/preset-env": "^7.12.7",
-    "babel-jest": "^26.6.3",
-    "eslint": "^7.14.0",
+    "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-import": "^2.22.1",
-    "jest": "^26.6.3",
-    "prettier": "2.2.1"
+    "node-fetch": "^2.6.1",
+    "prettier": "2.2.1",
+    "uvu": "^0.5.1",
+    "watchlist": "^0.2.3"
   },
   "node": {
-    "engine": ">= 16"
+    "engine": ">= 15"
   }
 }

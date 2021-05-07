@@ -1,4 +1,4 @@
-# tape-recorder [![Build Status](https://travis-ci.org/minni-im/tape-recorder.svg)](https://travis-ci.org/minni-im/tape-recorder)
+# tape-recorder
 
 ♫♪ |̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅| ♫♪
 Thin ORM for CouchDB on top of Nano
@@ -7,51 +7,50 @@ Thin ORM for CouchDB on top of Nano
 
 ## installation
 
-1. install [npm](http://npmjs.org)
-2. `npm install tape-recorder`
+1. install [npm](http://npmjs.org) (>= `v15`)
+2. `npm install @minni-im/tape-recorder`
 
 ## usage
 
 ```javascript
-import recorder from "tape-recorder";
+import recorder from "@minni-im/tape-recorder";
 
-let UserSchema = new recorder.Schema({
-  firstName: String,
-  lastName: String,
-  birthDate: { type: Date, default: Date.now },
+const { defineSchema, registerModel } = recorder("http://localhost:5984", "myDb");
+
+const UserSchema = defineSchema({
+	firstName: String,
+	lastName: String,
+	birthDate: { type: Date, default: Date.now },
 });
 
 UserSchema.method("age", () => {
-  let now = new Date().getFullYear();
-  return now - new Date(this.birthDate).getFullYear();
+	let now = new Date().getFullYear();
+	return now - new Date(this.birthDate).getFullYear();
 }).virtual(
-  "fullName",
-  () => {
-    return `${this.firstName} ${this.lastName}`;
-  },
-  (value) => {
-    [this.firstName, this.lastName] = value.split(" ");
-  }
+	"fullName",
+	() => `${this.firstName} ${this.lastName}`,
+	(value) => {
+		[this.firstName, this.lastName] = value.split(" ");
+	},
 );
 
-let User = recorder.model("User", UserSchema);
+const User = registerModel("User", UserSchema);
 
-let me = new User({
-  firstName: "John",
-  lastName: "Diggle",
-  birthDate: new Date("1975/04/01"),
+const me = new User({
+	firstName: "John",
+	lastName: "Diggle",
+	birthDate: new Date("1975/04/01"),
 });
 
-const savedMe = await me.save();
-console.log(
-  `Hello, I am ${savedMe.fullname}, and I'm ${savedMe.age()} years old`
-);
+await me.save();
+
+console.log(`Hello, I am ${me.fullname}, and I'm ${me.age()} years old`);
 // Hello, I am John Diggle, and I am 40 years old
 ```
 
 ## license
 
-copyright 2015 Benoit Charbonnier
+copyright 2021 Benoit Charbonnier
 
 licensed under the apache license, version 2.0 (the "license");
 you may not use this file except in compliance with the license.
