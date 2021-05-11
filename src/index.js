@@ -304,12 +304,12 @@ class Model extends Document {
 
 	static async findFirst({ raw = false, ...params } = { raw: false }) {
 		try {
-			const documents = await this.db.view(this.modelName, "all", {
+			const { rows, total_rows } = await this.db.view(this.modelName, "all", {
 				include_docs: true,
 				...params,
 			});
-			if (documents.length > 0) {
-				return raw ? documents[0] : hydrateDocument(this, { value: documents[0] });
+			if (total_rows > 0) {
+				return raw ? rows[0].doc : hydrateDocument(this, rows[0]);
 			}
 			return null;
 		} catch (error) {
@@ -366,7 +366,7 @@ function applyStaticMethodsFromSchema(model, schema) {
  * @param {nano.Configuration} options
  * @returns
  */
-export default async function Recorder(url = DEFAULT_LOCALHOST_COUCHDB, database, options = {}) {
+export default function Recorder(url = DEFAULT_LOCALHOST_COUCHDB, database, options = {}) {
 	let connection = nano({ url, ...options });
 
 	/** @type {Object<string, Model>} */
@@ -375,22 +375,25 @@ export default async function Recorder(url = DEFAULT_LOCALHOST_COUCHDB, database
 	/** @type {nano.DocumentScope}*/
 	let db;
 
-	if (database) {
-		try {
-			await connection.db.get(database);
-		} catch (err) {
-			console.error(`[Recorder] ${database} does not exist! Creating it.`);
-			await connection.db.create(database);
-		}
-		db = connection.db.use(database);
-	}
-
 	return {
 		/**
 		 * The underlying Nano object
 		 * @type {nano.ServerScope}
 		 */
 		connection,
+
+		async connect() {
+			if (!database) {
+				throw new Error("Must provide a database name to connect to");
+			}
+			try {
+				await connection.db.get(database);
+			} catch (err) {
+				console.error(`[Recorder] ${database} does not exist! Creating it.`);
+				await connection.db.create(database);
+			}
+			db = connection.db.use(database);
+		},
 
 		/**
 		 * Retrieves an existing model
@@ -425,7 +428,6 @@ export default async function Recorder(url = DEFAULT_LOCALHOST_COUCHDB, database
 		 */
 		async registerModel(modelName, modelSchema) {
 			const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema, db);
-			await schema.updateDesignDoc(modelName);
 			class GeneratedModel extends Model {
 				/** @param {Object<string, any>} data */
 				constructor(data = {}) {

@@ -10,7 +10,8 @@ function createSuiteWithConnection(suiteName, context = { dbName: "test" }) {
 	const tests = suite(suiteName, context);
 	const { dbName } = context;
 	tests.before(async (context) => {
-		Object.assign(context, await recorder("http://localhost:5984", dbName));
+		Object.assign(context, recorder("http://localhost:5984", dbName));
+		await context.connect();
 	});
 	tests.after(async (context) => {
 		await context.connection.db.destroy(dbName);
