@@ -106,8 +106,9 @@ function attachHooksFromSchema(model, schema) {
 }
 
 function hydrateDocument(model, row) {
-  const GeneratedModel = model.connection.model(row.value.modelType);
-  return new GeneratedModel(row.value);
+  const doc = row.doc || row.value;
+  const GeneratedModel = model.connection.model(doc.modelType);
+  return new GeneratedModel(doc);
 }
 
 /**
