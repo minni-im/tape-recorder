@@ -1,6 +1,6 @@
 {
   "name": "@minni-im/tape-recorder",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Thin ORM layer for couchdb on top of nano",
   "main": "lib/index.js",
   "scripts": {
