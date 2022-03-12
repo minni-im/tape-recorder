@@ -46,7 +46,7 @@ function applyVirtualsFromSchema(model, schema) {
     }
     const virtualDefinition = schema.virtuals[virtual];
     const propertyDefinition = {
-      get: virtualDefinition.get.bind(model)
+      get: virtualDefinition.get.bind(model),
     };
     if (virtualDefinition.set) {
       propertyDefinition.set = virtualDefinition.set.bind(model);
@@ -63,13 +63,16 @@ function applyVirtualsFromSchema(model, schema) {
  * @api private
  */
 function attachHooksFromSchema(model, schema) {
-  const hooks = schema.hooksQueue.reduce((seed, [hookType, [methodToHook, hook]]) => {
-    if (!(methodToHook in seed)) {
-      seed[methodToHook] = { pre: [], post: [] };
-    }
-    seed[methodToHook][hookType].push(hook);
-    return seed;
-  }, {});
+  const hooks = schema.hooksQueue.reduce(
+    (seed, [hookType, [methodToHook, hook]]) => {
+      if (!(methodToHook in seed)) {
+        seed[methodToHook] = { pre: [], post: [] };
+      }
+      seed[methodToHook][hookType].push(hook);
+      return seed;
+    },
+    {}
+  );
   Object.keys(hooks).forEach((methodName) => {
     const oldMethod = model[methodName];
     const hook = hooks[methodName];
@@ -77,20 +80,22 @@ function attachHooksFromSchema(model, schema) {
       const chain = [...hook.pre, oldMethod, ...hook.post];
       return new Promise((resolve, reject) => {
         let errored = false;
-        const final = chain.reduce((onGoing, hookFn) =>
-          onGoing
-            .then(() => {
-              if (errored) {
-                // In case of error, we don't want to execute next middlewares
-                return false;
-              }
-              return hookFn.call(model) || true;
-            })
-            .catch((error) => {
-              errored = true;
-              reject(error);
-            })
-          , Promise.resolve(true));
+        const final = chain.reduce(
+          (onGoing, hookFn) =>
+            onGoing
+              .then(() => {
+                if (errored) {
+                  // In case of error, we don't want to execute next middlewares
+                  return false;
+                }
+                return hookFn.call(model) || true;
+              })
+              .catch((error) => {
+                errored = true;
+                reject(error);
+              }),
+          Promise.resolve(true)
+        );
         // Everything went OK, we can resolve;
         final.then(() => {
           resolve();
@@ -133,15 +138,24 @@ export default class Model extends Document {
    */
   static findAll(params = {}) {
     return new Promise((resolve, reject) =>
-      this.db.view(this.modelName, "all", params, (error, response) => {
-        if (error) {
-          return reject(error);
-        }
-        const docs = response.rows
-          .map((row) => hydrateDocument(this, row));
+      this.db.view(
+        this.modelName,
+        "all",
+        Object.assign(
+          {
+            include_docs: true,
+          },
+          params
+        ),
+        (error, response) => {
+          if (error) {
+            return reject(error);
+          }
+          const docs = response.rows.map((row) => hydrateDocument(this, row));
 
-        return resolve(docs);
-      })
+          return resolve(docs);
+        }
+      )
     );
   }
 
@@ -172,13 +186,12 @@ export default class Model extends Document {
    * @api public
    */
   static findFirst(params = {}) {
-    return this.findAll(params)
-      .then(documents => {
-        if (documents.length) {
-          return documents[0];
-        }
-        return null;
-      });
+    return this.findAll(params).then((documents) => {
+      if (documents.length) {
+        return documents[0];
+      }
+      return null;
+    });
   }
 
   /**
@@ -188,14 +201,23 @@ export default class Model extends Document {
    */
   static where(viewName, params = {}) {
     return new Promise((resolve, reject) => {
-      this.db.view(this.modelName, viewName, params, (error, response) => {
-        if (error) {
-          return reject(error);
+      this.db.view(
+        this.modelName,
+        viewName,
+        Object.assign(
+          {
+            include_docs: true,
+          },
+          params
+        ),
+        (error, response) => {
+          if (error) {
+            return reject(error);
+          }
+          const docs = response.rows.map((row) => hydrateDocument(this, row));
+          return resolve(docs);
         }
-        const docs = response.rows
-          .map((row) => hydrateDocument(this, row));
-        return resolve(docs);
-      });
+      );
     });
   }
 
@@ -207,7 +229,8 @@ export default class Model extends Document {
    * @param {Connection} connection
    */
   static init(modelName, modelSchema, connection) {
-    const schema = modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
+    const schema =
+      modelSchema instanceof Schema ? modelSchema : new Schema(modelSchema);
     schema.generateDesignDoc(modelName);
     schema.updateDesignDoc(modelName, connection.db);
 

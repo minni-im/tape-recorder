@@ -9,7 +9,7 @@ const normalizeSchema = (schema) => {
     } else {
       schema[key] = {
         type: schema[key],
-        default: undefined
+        default: undefined,
       };
     }
   }
@@ -39,18 +39,21 @@ export default class Schema {
     this.view("all", {
       map: `function(doc) {
         if (doc.modelType === "${modelName}") {
-          emit(doc._id, doc);
+          emit(doc._id, null);
         }
-      }`
+      }`,
     });
-    this.names.forEach(property => {
-      this.view(property, {
-        map: `function(doc) {
-          if (doc.modelType === "${modelName}" && doc.${property}) {
-            emit(doc.${property}, doc);
-          }
-        }`
-      });
+    this.names.forEach((property) => {
+      const definition = this.schema[property];
+      if (definition.view === true) {
+        this.view(property, {
+          map: `function(doc) {
+            if (doc.modelType === "${modelName}" && doc.${property}) {
+              emit(doc.${property}, null);
+            }
+          }`,
+        });
+      }
     });
   }
 
@@ -65,17 +68,22 @@ export default class Schema {
     }
     const _designId = `_design/${modelName}`;
     const update = (rev) => {
-      connection.insert({
-        _id: _designId,
-        _rev: rev,
-        language: "javascript",
-        views: sortObjectByKey(this.views)
-      }, (error) => {
-        if (error) {
-          console.error(`Design Update '${error.error}' Error: ${error.reason}`);
+      connection.insert(
+        {
+          _id: _designId,
+          _rev: rev,
+          language: "javascript",
+          views: sortObjectByKey(this.views),
+        },
+        (error) => {
+          if (error) {
+            console.error(
+              `Design Update '${error.error}' Error: ${error.reason}`
+            );
+          }
+          this._designUpdated = true;
         }
-        this._designUpdated = true;
-      });
+      );
     };
     connection.get(_designId, (error, design) => {
       update(design && design._rev);
@@ -150,7 +158,7 @@ export default class Schema {
     if (typeof virtualName !== "string") {
       for (const name in virtualName) {
         this.virtuals[name] = {
-          get: virtualName[name].get
+          get: virtualName[name].get,
         };
         if (virtualName[name].set) {
           this.virtuals[name].set = virtualName[name].set;
@@ -158,7 +166,7 @@ export default class Schema {
       }
     } else {
       this.virtuals[virtualName] = {
-        get: getter
+        get: getter,
       };
       if (setter) {
         this.virtuals[virtualName].set = setter;

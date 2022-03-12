@@ -13,3 +13,4 @@ npm-debug.log
 *.csr
 ehthumbs.db
 Thumbs.db
+coverage/
