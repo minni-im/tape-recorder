@@ -1,65 +1,52 @@
-# tape-recorder ![Build](https://github.com/minni-im/tape-recorder/actions/workflows/node.js.yml/badge.svg)
+# @minni-im/tape-recorder
 
-♫♪ |̲̅̅●̲̅̅|̲̅̅=̲̅̅|̲̅̅●̲̅̅| ♫♪
-Thin ORM for CouchDB on top of Nano
+> a tiny couchdb orm
 
----
+**_why?_**
 
-## installation
+Manipulating Documents and Models classes instead of raw `fetch` is sometimes better.
 
-1. install [npm](http://npmjs.org) (>= `v15`)
-2. `npm install @minni-im/tape-recorder`
+## Install
 
-## usage
+```
+$ npm install --save @minni-im/tape-recorder
+```
 
-```javascript
-import recorder from "@minni-im/tape-recorder";
+## Usage
 
-const { defineSchema, registerModel } = recorder("http://localhost:5984", "myDb");
+**_Basic usage_**
 
-const UserSchema = defineSchema({
-  firstName: String,
-  lastName: String,
-  birthDate: { type: Date, default: Date.now },
+```js
+import { RecorderClient } from "@minni-im/tape-recorder";
+
+const recorder = new RecorderClient({
+	url: "http://localhost:5984",
+	db: "<dbName>",
 });
+```
 
-UserSchema.method("age", () => {
-  let now = new Date().getFullYear();
-  return now - new Date(this.birthDate).getFullYear();
-}).virtual(
-  "fullName",
-  () => `${this.firstName} ${this.lastName}`,
-  (value) => {
-    [this.firstName, this.lastName] = value.split(" ");
-  },
-);
+## Authentication
 
-const User = await registerModel("User", UserSchema);
+To connect using authentication, you can provide credentials to the configuration object.
 
-const me = new User({
-  firstName: "John",
-  lastName: "Diggle",
-  birthDate: new Date("1975/04/01"),
+```js
+import { RecorderClient } from "@minni-im/tape-recorder";
+
+const recorder = new RecorderClient({
+	url: "http:.//localhost:5984",
+	db: "<dbName>",
+	credentials: {
+		username: process.env.COUCH_USER,
+		password: process.env.COUCH_PASSWORD,
+	},
 });
-
-await me.save();
-
-console.log(`Hello, I am ${me.fullname}, and I'm ${me.age()} years old`);
-// Hello, I am John Diggle, and I am 40 years old
 ```
 
 ## license
 
-copyright 2021 Benoit Charbonnier
+copyright 2022 Benoit Charbonnier
 
-licensed under the apache license, version 2.0 (the "license");
-you may not use this file except in compliance with the license.
-you may obtain a copy of the license at
+licensed under the apache license, version 2.0 (the "license"); you may not use this file except in compliance with the license. you may obtain a copy of the license at
 
-    http://www.apache.org/licenses/LICENSE-2.0.html
-
-unless required by applicable law or agreed to in writing, software
-distributed under the license is distributed on an "as is" basis,
-without warranties or conditions of any kind, either express or implied.
-see the license for the specific language governing permissions and
-limitations under the license.
+http://www.apache.org/licenses/LICENSE-2.0.html
+unless required by applicable law or agreed to in writing, software distributed under the license is distributed on an "as is" basis, without warranties or conditions of any kind, either express or implied. see the license for the specific language governing permissions and limitations under the license.

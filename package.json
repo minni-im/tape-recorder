@@ -1,53 +1,63 @@
 {
   "name": "@minni-im/tape-recorder",
-  "version": "4.0.0",
-  "description": "Thin ORM layer for couchdb on top of nano",
+  "version": "5.0.0-beta.5",
+  "description": "CouchDB nodejs lightweight ORM",
   "type": "module",
-  "exports": {
-    "import": "./src/index.js"
-  },
+  "main": "./index.js",
+  "exports": "./index.js",
+  "types": "index.d.ts",
   "files": [
-    "src/index.js",
-    "README.md"
+    "bin",
+    "scripts",
+    "index.js",
+    "index.d.ts",
+    "package.json",
+    "readme.md"
   ],
+  "bin": {
+    "tape-recorder": "bin/cli.js"
+  },
   "scripts": {
     "test": "uvu",
-    "test:watch": "watchlist src tests -- npm test",
-    "test:coverage": "c8 --include=src npm test && c8 report --reporter=html"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://bcharbonnier@github.com/minni-im/tape-recorder.git"
+    "test:watch": "watchlist index.js test.js -- npm test",
+    "test:coverage": "c8 --include=index.js npm test && c8 report --reporter=html",
+    "postinstall": "node scripts/postinstall.cjs"
   },
   "keywords": [
-    "recorder",
-    "tape-recorder",
-    "orm",
-    "nano",
     "couchdb",
+    "orm",
+    "node",
     "database",
     "db",
     "nosql"
   ],
-  "author": "Benoit Charbonnier <benoit.charbonnier@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minni-im/tape-recorder.git"
+  },
+  "author": {
+    "name": "Benoit Charbonnier",
+    "email": "benoit.charbonnier@gmail.com"
+  },
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/minni-im/tape-recorder/issues"
   },
   "homepage": "https://github.com/minni-im/tape-recorder#readme",
   "dependencies": {
-    "nano": "^9.0.3"
+    "debug": "^4.3.4"
   },
   "devDependencies": {
-    "c8": "^7.7.2",
-    "eslint": "^7.25.0",
-    "eslint-config-prettier": "^8.3.0",
-    "node-fetch": "^2.6.1",
-    "prettier": "2.2.1",
-    "uvu": "^0.5.1",
-    "watchlist": "^0.2.3"
+    "c8": "^7.11.2",
+    "eslint": "^8.22.0",
+    "eslint-config-prettier": "^8.5.0",
+    "node-fetch": "^3.2.10",
+    "prettier": "^2.7.1",
+    "uvu": "^0.5.6",
+    "watchlist": "^0.3.1"
   },
   "node": {
-    "engine": ">= 15"
-  }
+    "engine": ">= 16"
+  },
+  "sideEffects": false
 }

@@ -1,7 +1,9 @@
 extends: ["eslint:recommended", "prettier"]
 parserOptions:
   sourceType: "module"
-  ecmaVersion: 2020
+  ecmaVersion: 2021
 env:
-  browser: true
-  es2020: true
+  node: true
+  es2021: true
+global:
+  fetch: true

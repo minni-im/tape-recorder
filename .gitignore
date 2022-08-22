@@ -11,7 +11,9 @@ npm-debug.log
 *.pem
 *.crt
 *.csr
+*.tgz
 ehthumbs.db
 Thumbs.db
-
+.env
 coverage/
+index-*.js
